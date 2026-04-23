@@ -268,14 +268,21 @@ func containsToolKeyword(msg, toolName string) bool {
 
 	// Common keyword mappings
 	keywords := map[string][]string{
-		"read_file":    {"file", "read", "open", "content", "document"},
-		"write_file":   {"write", "save", "create", "file", "document"},
-		"sql_query":    {"query", "sql", "database", "data", "search"},
-		"search":       {"search", "find", "look", "query"},
-		"calculator":   {"calculate", "math", "compute", "numbers"},
-		"memory_search": {"remember", "memory", "past", "previous"},
-		"web_search":   {"search", "web", "internet", "google"},
-		"exec":         {"run", "execute", "command", "bash", "shell"},
+		"read_file":      {"file", "read", "open", "content", "document"},
+		"write_file":     {"write", "save", "create", "file", "document"},
+		"sql_query":     {"query", "sql", "database", "data", "search"},
+		"search":         {"search", "find", "look", "query"},
+		"calculator":    {"calculate", "math", "compute", "numbers"},
+		"memory_search":  {"remember", "memory", "past", "previous"},
+		"web_search":     {"search", "web", "internet", "google"},
+		"exec":           {"run", "execute", "command", "bash", "shell"},
+		"whatsapp_send_message":   {"whatsapp", "send", "mensaje", "message", "enviar"},
+		"whatsapp_list_chats":      {"whatsapp", "chats", "grupos", "listar", "conversations", "groups"},
+		"whatsapp_list_contacts":   {"whatsapp", "contactos", "contacts", "agenda"},
+		"whatsapp_group_create":     {"whatsapp", "group", "create", "grupo", "crear"},
+		"whatsapp_group_invite":    {"whatsapp", "invite", "link", "invitacion", "invitar"},
+		"whatsapp_group_members":   {"whatsapp", "members", "participantes", "miembros"},
+		"whatsapp_profile_photo":   {"whatsapp", "photo", "profile", "foto", "perfil"},
 	}
 
 	if words, ok := keywords[toolName]; ok {
