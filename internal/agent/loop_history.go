@@ -14,6 +14,19 @@ import (
 	"github.com/nextlevelbuilder/goclaw/internal/tools"
 )
 
+// contextFilesHash computes a hash of the context files content for cache keying.
+func contextFilesHash(files []bootstrap.ContextFile) string {
+	if len(files) == 0 {
+		return ""
+	}
+	// Build a map of file path -> content for hashing
+	fileMap := make(map[string]string)
+	for _, f := range files {
+		fileMap[f.Path] = f.Content
+	}
+	return ComputeContextHash(fileMap)
+}
+
 // buildMessages constructs the full message list for an LLM request.
 // Returns the messages and whether BOOTSTRAP.md was present in context files
 // (used by the caller for auto-cleanup without an extra DB roundtrip).
@@ -196,7 +209,73 @@ func (l *Loop) buildMessages(ctx context.Context, history []providers.Message, s
 		}
 	}
 
-	systemPrompt := BuildSystemPrompt(SystemPromptConfig{
+	// System prompt cache: check if we've built this exact prompt before.
+	// Cache key = userID + mode + contextFiles hash.
+	// Cache stores the FULL system prompt including ExtraPrompt.
+	var systemPrompt string
+	if l.systemPromptCache != nil && userID != "" {
+		cacheKey := BuildCacheKey(
+			l.id,
+			0, // agentVersion not tracked per-request
+			contextFilesHash(contextFiles),
+			"", // locale not available here
+			mode,
+		)
+		// Override userID in key for per-user cache
+		cacheKey.AgentID = l.id + ":" + userID
+
+		if cached, ok := l.systemPromptCache.Get(cacheKey); ok {
+			systemPrompt = cached.Content
+		} else {
+			systemPrompt = BuildSystemPrompt(SystemPromptConfig{
+				AgentID:                l.id,
+				AgentUUID:              l.agentUUID.String(),
+				DisplayName:            l.displayName,
+				Model:                  l.model,
+				Workspace:              promptWorkspace,
+				Channel:                channel,
+				ChannelType:            channelType,
+				ChatID:                 chatID,
+				ChatTitle:              chatTitle,
+				PeerKind:               peerKind,
+				OwnerIDs:               l.ownerIDs,
+				Mode:                   mode,
+				ToolNames:              toolNames,
+				SkillsSummary:          l.resolveSkillsSummary(ctx, skillFilter),
+				PinnedSkillsSummary:    l.resolvePinnedSkillsSummary(ctx),
+				HasMemory:              l.hasMemory,
+				HasSpawn:               l.tools != nil && hasSpawn,
+				IsTeamContext:          injectTeamContext,
+				TeamWorkspace:          tools.ToolTeamWorkspaceFromCtx(ctx),
+				TeamMembers:            teamMembers,
+				TeamGuidance:           teamGuidance(edition.Current().TeamFullMode),
+				HasSkillSearch:         hasSkillSearch,
+				HasSkillManage:         l.skillEvolve && hasSkillManage,
+				HasMCPToolSearch:       hasMCPToolSearch,
+				HasKnowledgeGraph:      hasKG,
+				HasMemoryExpand:        hasMemoryExpand,
+				MCPToolDescs:           mcpToolDescs,
+				ContextFiles:           contextFiles,
+				AgentType:              l.agentType,
+				ExtraPrompt:            extraSystemPrompt,
+				SandboxEnabled:         l.sandboxEnabled,
+				SandboxContainerDir:    l.sandboxContainerDir,
+				SandboxWorkspaceAccess: l.sandboxWorkspaceAccess,
+				ShellDenyGroups:        l.shellDenyGroups,
+				SelfEvolve:             l.selfEvolve,
+				TTSAutoMode:            l.ttsAutoMode,
+				ProviderType:           providerTypeOf(l.provider),
+				CredentialCLIContext:   l.buildCredentialCLIContext(ctx),
+				IsBootstrap:            hadBootstrap && l.agentType != store.AgentTypePredefined,
+				DelegateTargets:        l.delegateTargets,
+				OrchMode:               l.orchMode,
+				ProviderContribution:   l.providerContribution(),
+			})
+			// Cache the built prompt
+			l.systemPromptCache.Set(cacheKey, providers.Message{Role: "system", Content: systemPrompt})
+		}
+	} else {
+		systemPrompt = BuildSystemPrompt(SystemPromptConfig{
 		AgentID:                l.id,
 		AgentUUID:              l.agentUUID.String(),
 		DisplayName:            l.displayName,
@@ -240,6 +319,7 @@ func (l *Loop) buildMessages(ctx context.Context, history []providers.Message, s
 		OrchMode:               l.orchMode,
 		ProviderContribution:   l.providerContribution(),
 	})
+	}
 
 	messages = append(messages, providers.Message{
 		Role:    "system",

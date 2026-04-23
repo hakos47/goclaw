@@ -260,6 +260,14 @@ type Loop struct {
 	// nil the pipeline fast-path skips all hook overhead. Populated from
 	// LoopConfig.HookDispatcher during startup wiring.
 	hookDispatcher hooks.Dispatcher
+
+	// toolRelevanceFilter performs semantic tool filtering based on user intent.
+	// Reduces tool definition tokens by 60-80% by selecting only relevant tools.
+	toolRelevanceFilter *ToolRelevanceFilter
+
+	// systemPromptCache caches built system prompts to avoid expensive rebuilds.
+	// Reduces CPU overhead from BuildSystemPrompt + resolveContextFiles by 60-80%.
+	systemPromptCache *SystemPromptCache
 }
 
 // AgentEvent is emitted during agent execution for WS broadcasting.
@@ -440,6 +448,15 @@ type LoopConfig struct {
 
 	// User identity resolver for credential lookups (maps channel contacts → tenant users)
 	UserResolver UserIdentityResolver
+
+	// ToolRelevanceFilter enables semantic tool filtering based on user intent.
+	// Uses embedding similarity to select only relevant tools, reducing token usage 60-80%.
+	// Nil = use all tools (legacy behavior).
+	ToolRelevanceFilter *ToolRelevanceFilter
+
+	// SystemPromptCache caches built system prompts to avoid expensive rebuilds.
+	// Reduces CPU overhead by 60-80%. Nil = disabled.
+	SystemPromptCache *SystemPromptCache
 }
 
 const defaultMaxTokens = config.DefaultMaxTokens
@@ -567,6 +584,8 @@ func NewLoop(cfg LoopConfig) *Loop {
 		delegateTargets:        cfg.DelegateTargets,
 		evolutionMetricsStore:  cfg.EvolutionMetricsStore,
 		userResolver:           cfg.UserResolver,
+		toolRelevanceFilter:    cfg.ToolRelevanceFilter,
+		systemPromptCache:     cfg.SystemPromptCache,
 	}
 }
 

@@ -190,6 +190,9 @@ func wireExtras(
 		slog.Info("agent hooks dispatcher wired", "handlers", "command,http,prompt")
 	}
 
+	// Resolve embedding provider for semantic tool filtering
+	embProvider := resolveEmbeddingProvider(stores.Providers, providerReg, stores.SystemConfigs)
+
 	resolver := agent.NewManagedResolver(agent.ResolverDeps{
 		AgentStore:             stores.Agents,
 		ProviderStore:          stores.Providers,
@@ -200,6 +203,7 @@ func wireExtras(
 		Tools:                  toolsReg,
 		ToolPolicy:             toolPE,
 		Skills:                 skillsLoader,
+		EmbeddingProvider:      embProvider,
 		SkillAccessStore:       skillAccessStore,
 		HasMemory:              hasMemory,
 		TraceCollector:         traceCollector,

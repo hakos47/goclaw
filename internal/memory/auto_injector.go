@@ -42,6 +42,7 @@ type InjectResult struct {
 	Section    string  // formatted prompt section (empty = nothing relevant)
 	MatchCount int     // total matches found
 	Injected   int     // entries injected (after budget trim)
+	UsedTokens int     // actual tokens injected (budget enforcement)
 	TopScore   float64 // highest relevance score
 }
 

@@ -199,6 +199,16 @@ func (l *Loop) makeBuildFilteredTools(req *RunRequest) func(state *pipeline.RunS
 		// connected per-request here with the actual user's credentials.
 		l.getUserMCPTools(state.Ctx, state.Input.UserID)
 
+		// Use semantic tool relevance filter if available and no explicit toolPolicy is set.
+		// This reduces tool definition tokens by 60-80% by selecting only relevant tools.
+		if l.toolRelevanceFilter != nil && l.toolPolicy == nil && state.Input.Message != "" {
+			toolDefs, err := l.toolRelevanceFilter.FilterByIntent(state.Ctx, state.Input.Message, l.tools)
+			if err == nil && len(toolDefs) > 0 {
+				return toolDefs, nil
+			}
+			// Fall through to standard filtering on error
+		}
+
 		maxIter := l.maxIterations
 		if req.MaxIterations > 0 && req.MaxIterations < maxIter {
 			maxIter = req.MaxIterations

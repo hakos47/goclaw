@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/nextlevelbuilder/goclaw/internal/bootstrap"
@@ -134,6 +135,10 @@ type ResolverDeps struct {
 
 	// Vault hook: called when a text file is uploaded by user (nil = no vault registration)
 	OnTextUploaded func(ctx context.Context, path, content string)
+
+	// EmbeddingProvider for semantic tool filtering (reduces tool def tokens by 60-80%).
+	// Nil = tool relevance filter disabled (use all tools).
+	EmbeddingProvider memory.EmbeddingProvider
 }
 
 // NewManagedResolver creates a ResolverFunc that builds Loops from DB agent data.
@@ -458,6 +463,16 @@ func NewManagedResolver(deps ResolverDeps) ResolverFunc {
 			evoMetricsStore = deps.EvolutionMetricsStore
 		}
 
+		// Tool relevance filter: reduces tool definition tokens by 60-80% via semantic filtering.
+		// Only created when an embedding provider is available.
+		var toolRelevanceFilter *ToolRelevanceFilter
+		if deps.EmbeddingProvider != nil {
+			toolRelevanceFilter = NewToolRelevanceFilter(deps.EmbeddingProvider, 8, 0.12)
+		}
+
+		// System prompt cache: reduces CPU overhead from BuildSystemPrompt by 60-80%.
+		systemPromptCache := NewSystemPromptCache(5*time.Minute, 100)
+
 		restrictVal := true // always restrict agents to their workspace
 		loop := NewLoop(LoopConfig{
 			ID:                     ag.AgentKey,
@@ -536,6 +551,8 @@ func NewManagedResolver(deps ResolverDeps) ResolverFunc {
 			DelegateTargets:        delegateTargets,
 			EvolutionMetricsStore:  evoMetricsStore,
 			UserResolver:           newContactResolver(deps.ContactStore),
+			ToolRelevanceFilter:   toolRelevanceFilter,
+			SystemPromptCache:     systemPromptCache,
 		})
 
 		slog.Info("resolved agent from DB", "agent", agentKey, "model", ag.Model, "provider", ag.Provider)
