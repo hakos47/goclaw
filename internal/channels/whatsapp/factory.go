@@ -20,6 +20,7 @@ type whatsappInstanceConfig struct {
 	HistoryLimit   int      `json:"history_limit,omitempty"`
 	AllowFrom      []string `json:"allow_from,omitempty"`
 	BlockReply     *bool    `json:"block_reply,omitempty"`
+	Tools          []string `json:"tools,omitempty"`
 }
 
 // FactoryWithDB returns a ChannelFactory with DB access for whatsmeow auth state.
@@ -66,6 +67,7 @@ func FactoryWithDBAudio(db *sql.DB, pendingStore store.PendingMessageStore, dial
 			RequireMention: ic.RequireMention,
 			HistoryLimit:   ic.HistoryLimit,
 			BlockReply:     ic.BlockReply,
+			Tools:          ic.Tools,
 		}
 		// DB instances default to "pairing" for groups (secure by default).
 		if waCfg.GroupPolicy == "" {

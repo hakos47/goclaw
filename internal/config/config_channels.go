@@ -139,7 +139,8 @@ type WhatsAppConfig struct {
 	GroupPolicy    string              `json:"group_policy,omitempty"`    // "pairing" (default for DB instances), "open" (default for config), "allowlist", "disabled"
 	RequireMention *bool               `json:"require_mention,omitempty"` // only respond in groups when bot is @mentioned (default false)
 	HistoryLimit   int                 `json:"history_limit,omitempty"`   // max pending group messages for context (default 200, 0=disabled)
-	BlockReply     *bool               `json:"block_reply,omitempty"`     // override gateway block_reply (nil = inherit)
+	BlockReply     *bool               `json:"block_reply,omitempty"`    // override gateway block_reply (nil = inherit)
+	Tools          []string            `json:"tools,omitempty"`           // tool allow list for this channel instance (nil = all)
 }
 
 type ZaloConfig struct {

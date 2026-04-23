@@ -51,6 +51,15 @@ func wireExtraTools(
 	toolsReg.Register(tools.NewMessageTool(workspace, agentCfg.RestrictToWorkspace))
 	// Group members tool (list members in group chats)
 	toolsReg.Register(tools.NewListGroupMembersTool())
+
+	// WhatsApp tools
+	toolsReg.Register(tools.NewWhatsAppSendTool())
+	toolsReg.Register(tools.NewWhatsAppListChatsTool())
+	toolsReg.Register(tools.NewWhatsAppListContactsTool())
+	toolsReg.Register(tools.NewWhatsAppGroupCreateTool())
+	toolsReg.Register(tools.NewWhatsAppGroupInviteTool())
+	toolsReg.Register(tools.NewWhatsAppGroupMembersTool())
+	toolsReg.Register(tools.NewWhatsAppProfilePhotoTool())
 	slog.Info("session + message tools registered")
 
 	// Register legacy tool aliases (backward-compat names from policy.go).

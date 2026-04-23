@@ -180,6 +180,7 @@ export const configSchema: Record<string, FieldDef[]> = {
     { key: "require_mention", label: "Require @Mention in Groups", type: "boolean", help: "Only respond in group chats when the bot is explicitly @mentioned" },
     { key: "allow_from", label: "Allowed Users", type: "tags", help: "WhatsApp user IDs" },
     { key: "block_reply", label: "Block Reply", type: "select", options: blockReplyOptions, defaultValue: "inherit", help: "Deliver intermediate text during tool iterations" },
+    { key: "tools", label: "Tool Allowlist", type: "tool-select", help: "Select which WhatsApp tools this channel can use. Leave empty to allow all." },
   ],
   facebook: [
     { key: "page_id", label: "Page ID", type: "text", required: true, help: "Facebook Page numeric ID" },

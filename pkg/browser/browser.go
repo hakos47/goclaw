@@ -131,6 +131,7 @@ func (m *Manager) Start(ctx context.Context) error {
 			Leakless(true).
 			Headless(m.headless).
 			Set("disable-gpu").
+			Set("no-sandbox").
 			Set("no-first-run").
 			Set("no-default-browser-check").
 			Set("disable-dev-shm-usage").
@@ -139,7 +140,8 @@ func (m *Manager) Start(ctx context.Context) error {
 			Set("disable-background-networking").
 			Set("disable-renderer-backgrounding").
 			Set("disable-background-timer-throttling").
-			Set("disable-backgrounding-occluded-windows")
+			Set("disable-backgrounding-occluded-windows").
+			Set("disable-setuid-sandbox")
 
 		u, err := l.Launch()
 		if err != nil {

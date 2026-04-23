@@ -3,6 +3,8 @@ package tools
 import (
 	"context"
 
+	"go.mau.fi/whatsmeow"
+
 	"github.com/google/uuid"
 
 	"github.com/nextlevelbuilder/goclaw/internal/bus"
@@ -109,6 +111,14 @@ type ChannelTenantChecker func(channelName string) (tenantID uuid.UUID, exists b
 // ChannelTenantCheckerAware tools can receive a channel tenant checker.
 type ChannelTenantCheckerAware interface {
 	SetChannelTenantChecker(ChannelTenantChecker)
+}
+
+// WhatsAppClientGetter returns (client, authenticated, exists) for a channel name.
+type WhatsAppClientGetter func(channelName string) (*whatsmeow.Client, bool, bool)
+
+// WhatsAppClientGetterAware tools receive a WhatsApp client getter.
+type WhatsAppClientGetterAware interface {
+	SetWhatsAppClientGetter(WhatsAppClientGetter)
 }
 
 // ChannelAware is optionally implemented by tools that only work on specific channel types.

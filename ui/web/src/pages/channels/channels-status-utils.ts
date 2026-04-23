@@ -78,7 +78,7 @@ export function getChannelStatusFallback(
     return null;
   }
 
-  if (instance.channel_type === "zalo_personal") {
+  if (instance.channel_type === "zalo_personal" || instance.channel_type === "whatsapp") {
     return {
       enabled: true,
       running: false,

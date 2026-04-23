@@ -91,6 +91,29 @@ func builtinToolSeedData() []store.BuiltinToolDef {
 		// messaging
 		{Name: "message", DisplayName: "Message", Description: "Send a proactive message to a user on a connected channel (Telegram, Discord, etc.)", Category: "messaging", Enabled: true},
 
+		// whatsapp
+		{Name: "whatsapp_send_message", DisplayName: "WhatsApp Send", Description: "Send a text message to a WhatsApp user or group via JID", Category: "whatsapp", Enabled: true,
+			Requires: []string{"channel:whatsapp"},
+		},
+		{Name: "whatsapp_list_chats", DisplayName: "WhatsApp List Chats", Description: "List all WhatsApp groups the linked account has joined", Category: "whatsapp", Enabled: true,
+			Requires: []string{"channel:whatsapp"},
+		},
+		{Name: "whatsapp_list_contacts", DisplayName: "WhatsApp List Contacts", Description: "List all WhatsApp contacts stored by the linked account", Category: "whatsapp", Enabled: true,
+			Requires: []string{"channel:whatsapp"},
+		},
+		{Name: "whatsapp_group_create", DisplayName: "WhatsApp Create Group", Description: "Create a new WhatsApp group with specified participants", Category: "whatsapp", Enabled: true,
+			Requires: []string{"channel:whatsapp"},
+		},
+		{Name: "whatsapp_group_invite", DisplayName: "WhatsApp Group Invite", Description: "Get the WhatsApp invite link for a group", Category: "whatsapp", Enabled: true,
+			Requires: []string{"channel:whatsapp"},
+		},
+		{Name: "whatsapp_group_members", DisplayName: "WhatsApp Group Members", Description: "List all members of a WhatsApp group", Category: "whatsapp", Enabled: true,
+			Requires: []string{"channel:whatsapp"},
+		},
+		{Name: "whatsapp_profile_photo", DisplayName: "WhatsApp Profile Photo", Description: "Get the profile photo URL for a WhatsApp user or group", Category: "whatsapp", Enabled: true,
+			Requires: []string{"channel:whatsapp"},
+		},
+
 		// scheduling
 		{Name: "cron", DisplayName: "Cron Scheduler", Description: "Schedule or manage recurring tasks using cron expressions, at-times, or intervals", Category: "scheduling", Enabled: true,
 			Metadata: json.RawMessage(`{"config_hint":"Config → Cron"}`),

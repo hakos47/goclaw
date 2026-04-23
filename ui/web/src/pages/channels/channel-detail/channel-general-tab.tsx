@@ -42,7 +42,8 @@ export function ChannelGeneralTab({ instance, agents, onUpdate }: ChannelGeneral
   const existingConfig = (instance.config ?? {}) as Record<string, unknown>;
   const initialPolicyValues = Object.fromEntries(
     essentialKeys
-      .filter((k) => existingConfig[k] !== undefined)
+      .filter((k) => existingConfig[k] !== undefined && existingConfig[k] !== null)
+      .filter((k) => !Array.isArray(existingConfig[k]) || (existingConfig[k] as unknown[]).length > 0)
       .map((k) => [k, existingConfig[k]]),
   );
   const [policyValues, setPolicyValues] = useState<Record<string, unknown>>(initialPolicyValues);
@@ -50,7 +51,15 @@ export function ChannelGeneralTab({ instance, agents, onUpdate }: ChannelGeneral
   const [saving, setSaving] = useState(false);
 
   const handlePolicyChange = useCallback((key: string, value: unknown) => {
-    setPolicyValues((prev) => ({ ...prev, [key]: value }));
+    if (Array.isArray(value) && value.length === 0) {
+      setPolicyValues((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    } else {
+      setPolicyValues((prev) => ({ ...prev, [key]: value }));
+    }
   }, []);
 
   const handleSave = async () => {
@@ -58,7 +67,11 @@ export function ChannelGeneralTab({ instance, agents, onUpdate }: ChannelGeneral
     try {
       // Merge policy values into existing config, preserving other keys (groups, advanced)
       const cleanPolicies = Object.fromEntries(
-        Object.entries(policyValues).filter(([, v]) => v !== undefined && v !== "" && v !== null),
+        Object.entries(policyValues).filter(([, v]) => {
+          if (v === undefined || v === null || v === "") return false;
+          if (Array.isArray(v) && v.length === 0) return false;
+          return true;
+        }),
       );
       const mergedConfig = { ...existingConfig, ...cleanPolicies };
       await onUpdate({

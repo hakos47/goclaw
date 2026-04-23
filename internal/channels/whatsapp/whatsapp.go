@@ -81,6 +81,40 @@ func (c *Channel) cacheQR(pngB64 string) {
 	c.lastQRMu.Unlock()
 }
 
+// Client returns the underlying whatsmeow client for tool access.
+func (c *Channel) Client() *whatsmeow.Client { return c.client }
+
+// ListGroupMembers implements channels.GroupMemberProvider.
+// Uses WhatsApp's group info API to list all participants.
+func (c *Channel) ListGroupMembers(ctx context.Context, chatID string) ([]channels.GroupMember, error) {
+	if c.client == nil || !c.client.IsConnected() {
+		return nil, fmt.Errorf("whatsapp not connected")
+	}
+
+	jid, err := types.ParseJID(chatID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid JID %q: %w", chatID, err)
+	}
+
+	info, err := c.client.GetGroupInfo(ctx, jid)
+	if err != nil {
+		return nil, fmt.Errorf("get group info: %w", err)
+	}
+
+	members := make([]channels.GroupMember, 0, len(info.Participants))
+	for _, p := range info.Participants {
+		name := p.DisplayName
+		if name == "" {
+			name = p.JID.String()
+		}
+		members = append(members, channels.GroupMember{
+			MemberID: p.JID.String(),
+			Name:     name,
+		})
+	}
+	return members, nil
+}
+
 // New creates a new WhatsApp channel backed by whatsmeow.
 // dialect must be "pgx" (PostgreSQL) or "sqlite3" (SQLite/desktop).
 // audioMgr is optional (nil = STT disabled).

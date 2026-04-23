@@ -335,4 +335,8 @@ var fallbackPreviewToolNames = []string{
 	"memory_search", "memory_get", "spawn",
 	"web_search", "web_fetch", "skill_search", "use_skill",
 	"datetime", "cron",
+	"whatsapp_list_chats", "whatsapp_list_contacts",
+	"whatsapp_send_message", "whatsapp_group_create",
+	"whatsapp_group_invite", "whatsapp_group_members",
+	"whatsapp_profile_photo",
 }

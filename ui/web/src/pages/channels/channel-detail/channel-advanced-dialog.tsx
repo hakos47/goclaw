@@ -64,22 +64,41 @@ export function ChannelAdvancedDialog({
   useEffect(() => {
     if (!open) return;
     setValues(deriveInitialValues(instance));
-     
   }, [open, instance]);
 
   const handleChange = useCallback((key: string, value: unknown) => {
-    setValues((prev) => ({ ...prev, [key]: value }));
+    if (Array.isArray(value) && value.length === 0 && !ACCESS_KEYS.has(key)) {
+      setValues((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    } else {
+      setValues((prev) => ({ ...prev, [key]: value }));
+    }
   }, []);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const existingConfig = (instance.config ?? {}) as Record<string, unknown>;
-      const cleanAdvanced = Object.fromEntries(
-        Object.entries(values).filter(([, v]) => v !== undefined && v !== "" && v !== null),
+      const merged: Record<string, unknown> = { ...existingConfig };
+      for (const key of ACCESS_KEYS) {
+        if (key in values) {
+          merged[key] = values[key];
+        }
+      }
+      const otherKeys = Object.fromEntries(
+        Object.entries(values).filter(([k]) => !ACCESS_KEYS.has(k) && k !== "groups"),
       );
-      // Merge: preserve essential keys and groups from existing, overwrite advanced keys
-      const merged = { ...existingConfig, ...cleanAdvanced };
+      const cleanOther = Object.fromEntries(
+        Object.entries(otherKeys).filter(([, v]) => {
+          if (v === undefined || v === null || v === "") return false;
+          if (Array.isArray(v) && v.length === 0) return false;
+          return true;
+        }),
+      );
+      Object.assign(merged, cleanOther);
       await onUpdate({ config: merged });
       onOpenChange(false);
     } catch { // toast shown by hook

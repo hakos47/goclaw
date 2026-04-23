@@ -59,7 +59,7 @@ export function MultiUserPicker({
         portalContainer={portalContainer}
       />
       {value.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 items-center">
           {value.map((id) => (
             <Badge key={id} variant="secondary" className="gap-1 pr-1">
               {formatUserLabel(id, resolve)}
@@ -72,6 +72,13 @@ export function MultiUserPicker({
               </button>
             </Badge>
           ))}
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            className="text-xs text-muted-foreground hover:text-foreground ml-1 cursor-pointer"
+          >
+            Clear all
+          </button>
         </div>
       )}
     </div>

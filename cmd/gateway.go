@@ -44,6 +44,7 @@ import (
 	"github.com/nextlevelbuilder/goclaw/internal/tools"
 	"github.com/nextlevelbuilder/goclaw/internal/vault"
 	"github.com/nextlevelbuilder/goclaw/pkg/protocol"
+	"go.mau.fi/whatsmeow"
 )
 
 func runGateway() {
@@ -448,6 +449,30 @@ func runGateway() {
 	if t, ok := toolsReg.Get("list_group_members"); ok {
 		if gl, ok := t.(tools.GroupMemberListerAware); ok {
 			gl.SetGroupMemberLister(channelMgr.ListGroupMembers)
+		}
+	}
+
+	// Wire WhatsApp client getter on all WhatsApp tools
+	waClientGetter := func(channelName string) (*whatsmeow.Client, bool, bool) {
+		ch, ok := channelMgr.GetChannel(channelName)
+		if !ok {
+			return nil, false, false
+		}
+		wa, ok := ch.(*whatsapp.Channel)
+		if !ok {
+			return nil, false, false
+		}
+		return wa.Client(), wa.IsAuthenticated(), true
+	}
+	for _, toolName := range []string{
+		"whatsapp_send_message", "whatsapp_list_chats", "whatsapp_list_contacts",
+		"whatsapp_group_create", "whatsapp_group_invite", "whatsapp_group_members",
+		"whatsapp_profile_photo",
+	} {
+		if t, ok := toolsReg.Get(toolName); ok {
+			if wcg, ok := t.(tools.WhatsAppClientGetterAware); ok {
+				wcg.SetWhatsAppClientGetter(waClientGetter)
+			}
 		}
 	}
 
