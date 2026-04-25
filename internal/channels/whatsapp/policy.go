@@ -19,7 +19,7 @@ func (c *Channel) checkGroupPolicy(ctx context.Context, senderID, chatID string)
 		return true
 	case channels.PolicyNeedsPairing:
 		groupSenderID := fmt.Sprintf("group:%s", chatID)
-		c.sendPairingReply(ctx, groupSenderID, chatID)
+		c.SendPairingReply(ctx, groupSenderID, chatID)
 		return false
 	default:
 		return false
@@ -37,7 +37,7 @@ func (c *Channel) checkDMPolicy(ctx context.Context, senderID, chatID string) bo
 	case channels.PolicyAllow:
 		return true
 	case channels.PolicyNeedsPairing:
-		c.sendPairingReply(ctx, senderID, chatID)
+		c.SendPairingReply(ctx, senderID, chatID)
 		return false
 	default:
 		slog.Debug("whatsapp DM rejected by policy", "sender_id", senderID, "policy", dmPolicy)
@@ -45,8 +45,8 @@ func (c *Channel) checkDMPolicy(ctx context.Context, senderID, chatID string) bo
 	}
 }
 
-// sendPairingReply sends a pairing code to the user via WhatsApp.
-func (c *Channel) sendPairingReply(ctx context.Context, senderID, chatID string) {
+// SendPairingReply sends a pairing code to the user via WhatsApp.
+func (c *Channel) SendPairingReply(ctx context.Context, senderID, chatID string) {
 	ps := c.PairingService()
 	if ps == nil {
 		slog.Warn("whatsapp pairing: no pairing service configured")

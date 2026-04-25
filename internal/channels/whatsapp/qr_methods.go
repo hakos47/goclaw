@@ -44,6 +44,7 @@ func (m *QRMethods) Register(router *gateway.MethodRouter) {
 }
 
 func (m *QRMethods) handleResolveJID(ctx context.Context, client *gateway.Client, req *goclawprotocol.RequestFrame) {
+	slog.Debug("whatsapp.id.resolve: request received", "params", string(req.Params))
 	var params struct {
 		InstanceID string `json:"instance_id"`
 		Phone      string `json:"phone"`
@@ -96,6 +97,10 @@ func (m *QRMethods) handleResolveJID(ctx context.Context, client *gateway.Client
 		client.SendResponse(goclawprotocol.NewErrorResponse(req.ID, goclawprotocol.ErrNotFound, "number not found on WhatsApp"))
 		return
 	}
+
+	// Also trigger a pairing code message to the resolved JID if it's the requested discovery.
+	// This fulfills the user requirement of receiving the code when clicking "Search ID".
+	wa.SendPairingReply(ctx, info.LID.String(), targetJID.String())
 
 	client.SendResponse(goclawprotocol.NewOKResponse(req.ID, map[string]any{
 		"jid": targetJID.String(),

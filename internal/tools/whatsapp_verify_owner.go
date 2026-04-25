@@ -28,7 +28,7 @@ func (t *WhatsAppVerifyOwnerTool) SetWhatsAppClientGetter(getter WhatsAppClientG
 func (t *WhatsAppVerifyOwnerTool) Name() string { return "whatsapp_verify_owner" }
 
 func (t *WhatsAppVerifyOwnerTool) Description() string {
-	return "Designate a phone number as the owner of the WhatsApp channel. Provide the phone number (e.g. '34603440920'). The tool will resolve the identity, update the configuration to grant full privileges, and send a verification message to the user. Use this when the user says 'my number is X' or 'I am the owner'."
+	return "Designate a phone number as the owner of the WhatsApp channel. Provide the phone number (e.g. '34600112233'). The tool will resolve the identity, update the configuration to grant full privileges, and send a verification message to the user. Use this when the user says 'my number is X' or 'I am the owner'."
 }
 
 func (t *WhatsAppVerifyOwnerTool) Parameters() map[string]any {

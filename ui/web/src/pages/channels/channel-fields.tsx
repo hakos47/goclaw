@@ -91,7 +91,12 @@ function FieldAction({
   const [loading, setLoading] = useState(false);
 
   const handleAction = async () => {
-    if (!field.action || !instanceId || !value) return;
+    if (!field.action || !value) return;
+
+    if (!instanceId) {
+      toast.info("Instance ID missing", "Please save the channel first before resolving ID.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -105,6 +110,14 @@ function FieldAction({
           onChange(res.jid);
           toast.success("Identity Resolved", `JID: ${res.jid}`);
         }
+      } else if (field.action.type === "whatsapp_verify_code") {
+        await ws.call(Methods.PAIRING_APPROVE, {
+          code: value.trim().toUpperCase(),
+          approvedBy: "dashboard-owner"
+        });
+        
+        onChange("");
+        toast.success("Code Validated", "Your WhatsApp number has been successfully verified as Owner.");
       }
     } catch (err: any) {
       toast.error("Discovery Failed", err.message || String(err));
@@ -113,7 +126,7 @@ function FieldAction({
     }
   };
 
-  if (!field.action || !instanceId) return null;
+  if (!field.action) return null;
 
   return (
     <Button

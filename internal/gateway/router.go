@@ -51,9 +51,17 @@ func (r *MethodRouter) Register(method string, handler MethodHandler) {
 
 // Handle dispatches a request to the appropriate handler.
 func (r *MethodRouter) Handle(ctx context.Context, client *Client, req *protocol.RequestFrame) {
+	// Inject tenant and user context from authenticated client
+	ctx = store.WithTenantID(ctx, client.TenantID())
+	ctx = store.WithUserID(ctx, client.UserID())
+
+	slog.Debug("router: handle request", "method", req.Method, "client", client.id, "req_id", req.ID)
 	handler, ok := r.handlers[req.Method]
+
 	if !ok {
-		slog.Warn("unknown method", "method", req.Method, "client", client.id)
+		var raw map[string]any
+		_ = json.Unmarshal(req.Params, &raw) // ignore error, just for logging
+		slog.Warn("unknown method", "method", req.Method, "id", req.ID, "params", raw, "client", client.id)
 		locale := i18n.Normalize(client.locale)
 		client.SendResponse(protocol.NewErrorResponse(
 			req.ID,

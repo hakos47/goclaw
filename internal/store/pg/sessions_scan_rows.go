@@ -19,6 +19,7 @@ type sessionListRow struct {
 	Channel         *string    `db:"channel"`
 	SourceChannelID *uuid.UUID `db:"source_channel_id"`
 	ChannelType     *string    `db:"channel_type"`
+	Category        *string    `db:"category"`
 	UserID          *string    `db:"user_id"`
 	MetaJSON        []byte     `db:"metadata"`
 }
@@ -39,6 +40,7 @@ func (r *sessionListRow) toSessionInfo(msgCount int) store.SessionInfo {
 		Channel:         derefStr(r.Channel),
 		SourceChannelID: r.SourceChannelID,
 		ChannelType:     derefStr(r.ChannelType),
+		Category:        derefStr(r.Category),
 		UserID:          derefStr(r.UserID),
 		Metadata:        meta,
 	}
@@ -54,6 +56,7 @@ type sessionPagedRow struct {
 	Channel         *string    `db:"channel"`
 	SourceChannelID *uuid.UUID `db:"source_channel_id"`
 	ChannelType     *string    `db:"channel_type"`
+	Category        *string    `db:"category"`
 	UserID          *string    `db:"user_id"`
 	MetaJSON        []byte     `db:"metadata"`
 }
@@ -73,6 +76,7 @@ func (r *sessionPagedRow) toSessionInfo() store.SessionInfo {
 		Channel:         derefStr(r.Channel),
 		SourceChannelID: r.SourceChannelID,
 		ChannelType:     derefStr(r.ChannelType),
+		Category:        derefStr(r.Category),
 		UserID:          derefStr(r.UserID),
 		Metadata:        meta,
 	}
@@ -88,6 +92,7 @@ type sessionRichRow struct {
 	Channel         *string    `db:"channel"`
 	SourceChannelID *uuid.UUID `db:"source_channel_id"`
 	ChannelType     *string    `db:"channel_type"`
+	Category        *string    `db:"category"`
 	UserID          *string    `db:"user_id"`
 	MetaJSON        []byte     `db:"metadata"`
 	Model           *string    `db:"model"`
@@ -116,6 +121,7 @@ func (r *sessionRichRow) toSessionInfoRich() store.SessionInfoRich {
 			Channel:         derefStr(r.Channel),
 			SourceChannelID: r.SourceChannelID,
 			ChannelType:     derefStr(r.ChannelType),
+			Category:        derefStr(r.Category),
 			UserID:          derefStr(r.UserID),
 			Metadata:        meta,
 		},

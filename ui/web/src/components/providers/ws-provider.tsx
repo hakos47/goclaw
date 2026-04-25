@@ -10,9 +10,11 @@ import { TEAM_RELATED_EVENTS, Methods } from "@/api/protocol";
 import { useTeamEventStore } from "@/stores/use-team-event-store";
 import type { TenantMembership } from "@/types/tenant";
 
-// In dev mode, connect directly to backend WS (bypass Vite proxy).
+// In dev mode, use current host to connect to backend WS.
 // In production, use relative "/ws" path.
-const WS_URL = import.meta.env.VITE_WS_URL || "/ws";
+const WS_URL = import.meta.env.DEV 
+  ? `ws://${window.location.hostname}:18790/ws`
+  : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`;
 
 export function WsProvider({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
