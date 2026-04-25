@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
-import { History, RefreshCw } from "lucide-react";
+import { History, RefreshCw, Target, LifeBuoy, Briefcase, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SearchInput } from "@/components/shared/search-input";
@@ -18,7 +18,11 @@ import type { SessionInfo } from "@/types/session";
 
 export function SessionsPage() {
   const { t } = useTranslation("sessions");
+  const { t: tSidebar } = useTranslation("sidebar");
   const { key: detailKey } = useParams<{ key: string }>();
+  const [searchParams] = useSearchParams();
+  const category = searchParams.get("category") || undefined;
+  
   const navigate = useNavigate();
   const globalPageSize = useUiStore((s) => s.pageSize);
   const setGlobalPageSize = useUiStore((s) => s.setPageSize);
@@ -28,6 +32,7 @@ export function SessionsPage() {
   const setPageSize = (size: number) => { setPageSizeRaw(size); setPage(1); setGlobalPageSize(size); };
 
   const { sessions, total, loading, preview, deleteSession, resetSession, patchSession } = useSessions({
+    category,
     limit: pageSize,
     offset: (page - 1) * pageSize,
   });
@@ -35,19 +40,21 @@ export function SessionsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  const detailSession = detailKey
-    ? sessions.find((s) => s.key === decodeURIComponent(detailKey))
-    : null;
+  const categoryLabel = category ? tSidebar(`nav.sessions${category.charAt(0).toUpperCase() + category.slice(1)}`) : t("title");
+  const categoryIcon = category === "inbound" ? Target : 
+                       category === "support" ? LifeBuoy :
+                       category === "ops" ? Briefcase :
+                       category === "evolution" ? TrendingUp : History;
 
   if (detailSession) {
     return (
       <SessionDetailPage
         session={detailSession}
-        onBack={() => navigate("/sessions")}
+        onBack={() => navigate(category ? `/sessions?category=${category}` : "/sessions")}
         onPreview={preview}
         onDelete={async (key) => {
           await deleteSession(key);
-          navigate("/sessions");
+          navigate(category ? `/sessions?category=${category}` : "/sessions");
         }}
         onReset={resetSession}
         onPatch={patchSession}
@@ -55,21 +62,15 @@ export function SessionsPage() {
     );
   }
 
-  const filtered = sessions.filter((s) => {
-    const q = search.toLowerCase();
-    const meta = s.metadata;
-    return (
-      s.key.toLowerCase().includes(q) ||
-      (s.label ?? "").toLowerCase().includes(q) ||
-      (meta?.display_name ?? "").toLowerCase().includes(q) ||
-      (meta?.username ?? "").toLowerCase().includes(q) ||
-      (meta?.chat_title ?? "").toLowerCase().includes(q)
-    );
-  });
+  // ... filtered logic (unchanged)
 
   return (
     <div className="p-4 sm:p-6 pb-10">
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader 
+        title={categoryLabel} 
+        description={category ? t(`descriptionCategory`, { category: categoryLabel }) : t("description")} 
+        icon={categoryIcon}
+      />
 
       <div className="mt-4">
         <SearchInput

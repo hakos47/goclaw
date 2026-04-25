@@ -20,6 +20,9 @@ type SessionData struct {
 	UserID    string     `json:"userID,omitempty" db:"user_id"`     // External user ID (e.g. Telegram user ID)
 	TeamID    *uuid.UUID `json:"teamID,omitempty" db:"team_id"`     // Team UUID (set for team sessions)
 
+	SourceChannelID *uuid.UUID `json:"sourceChannelID,omitempty" db:"source_channel_id"` // Acquisition channel ID
+	ChannelType     string     `json:"channelType,omitempty" db:"channel_type"`           // e.g. "whatsapp", "telegram", "web"
+
 	Model                      string `json:"model,omitempty" db:"model"`
 	Provider                   string `json:"provider,omitempty" db:"provider"`
 	Channel                    string `json:"channel,omitempty" db:"channel"`
@@ -47,6 +50,8 @@ type SessionInfo struct {
 	Updated      time.Time         `json:"updated" db:"updated_at"`
 	Label        string            `json:"label,omitempty" db:"label"`
 	Channel      string            `json:"channel,omitempty" db:"channel"`
+	SourceChannelID *uuid.UUID     `json:"sourceChannelID,omitempty" db:"source_channel_id"`
+	ChannelType     string         `json:"channelType,omitempty" db:"channel_type"`
 	UserID       string            `json:"userID,omitempty" db:"user_id"`
 	Metadata     map[string]string `json:"metadata,omitempty" db:"metadata"`
 }
@@ -55,6 +60,7 @@ type SessionInfo struct {
 type SessionListOpts struct {
 	AgentID  string    `db:"-"`
 	Channel  string    `db:"-"` // optional: filter by channel prefix ("ws", "telegram", etc.)
+	Category string    `db:"-"` // optional: "inbound", "support", "ops", "evolution"
 	UserID   string    `db:"-"` // optional: filter by user_id
 	TenantID uuid.UUID `db:"-"` // optional: filter by tenant (uuid.Nil = no filter)
 	Limit    int       `db:"-"`

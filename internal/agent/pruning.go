@@ -172,7 +172,7 @@ func resolvePruningSettings(cfg *config.ContextPruningConfig) *effectivePruningS
 // When tc is non-nil, token counting uses tiktoken for accuracy (especially
 // for non-ASCII content like Vietnamese/Chinese). When nil, falls back to the
 // legacy rune_count/charsPerTokenEstimate heuristic so existing tests pass.
-func pruneContextMessages(msgs []providers.Message, contextWindowTokens int, cfg *config.ContextPruningConfig, tc tokencount.TokenCounter, model string, stats *pipeline.PruneStats) []providers.Message {
+func pruneContextMessages(msgs []providers.Message, contextWindowTokens int, channelType string, cfg *config.ContextPruningConfig, tc tokencount.TokenCounter, model string, stats *pipeline.PruneStats) []providers.Message {
 	// Resolve effective mode: empty defaults to "cache-ttl" (enabled by default).
 	mode := defaultPruningMode
 	if cfg != nil && cfg.Mode != "" {
@@ -191,6 +191,17 @@ func pruneContextMessages(msgs []providers.Message, contextWindowTokens int, cfg
 
 	est := &pruningEstimator{counter: tc, model: model}
 	settings := resolvePruningSettings(cfg)
+
+	// --- Differentiated Context Pruning (Category-based) ---
+	// Stricter limits for 'inbound' (leads), deeper memory for 'ops'/'evolution'.
+	isLead := channelType == "whatsapp" || channelType == "facebook"
+	if isLead {
+		// Aggressive pruning for leads: reduce ratios and min thresholds
+		settings.softTrimRatio = 0.2 // Start trimming earlier (20% of window)
+		settings.hardClearRatio = 0.4
+		settings.minPrunableToolChars = 10000 // Lower bar for hard clear
+		settings.softTrimMaxChars = 2000      // Keep less of each tool result
+	}
 
 	// tokenWindow is contextWindowTokens when using tiktoken (est.counter != nil),
 	// or charWindow (tokens * 4) when using the char-based fallback.

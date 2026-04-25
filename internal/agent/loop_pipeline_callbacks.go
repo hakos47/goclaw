@@ -47,7 +47,7 @@ func (l *Loop) pipelineCallbacks(req *RunRequest, bridgeRS *runState) pipelineCa
 		injectReminders:    l.makeInjectReminders(req),
 		buildFilteredTools: l.makeBuildFilteredTools(req),
 		callLLM:            l.makeCallLLM(req, emitRun),
-		pruneMessages:      l.makePruneMessages(),
+		pruneMessages:      l.makePruneMessages(req.ChannelType),
 		sanitizeHistory:    sanitizeHistory,
 		compactMessages:    l.makeCompactMessages(req),
 		runMemoryFlush:     l.makeRunMemoryFlush(),
@@ -325,10 +325,10 @@ func (l *Loop) makeCallLLM(req *RunRequest, emitRun func(AgentEvent)) func(ctx c
 	}
 }
 
-func (l *Loop) makePruneMessages() func(msgs []providers.Message, budget int) ([]providers.Message, pipeline.PruneStats) {
+func (l *Loop) makePruneMessages(category string) func(msgs []providers.Message, budget int) ([]providers.Message, pipeline.PruneStats) {
 	return func(msgs []providers.Message, budget int) ([]providers.Message, pipeline.PruneStats) {
 		var stats pipeline.PruneStats
-		pruned := pruneContextMessages(msgs, budget, l.contextPruningCfg, l.tokenCounter, l.model, &stats)
+		pruned := pruneContextMessages(msgs, budget, category, l.contextPruningCfg, l.tokenCounter, l.model, &stats)
 		return pruned, stats
 	}
 }

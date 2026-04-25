@@ -37,6 +37,9 @@ func NewPGSessionStore(db *sql.DB) *PGSessionStore {
 	return s
 }
 
+// DB returns the underlying sql.DB connection.
+func (s *PGSessionStore) DB() *sql.DB { return s.db }
+
 // migrateLegacyWSKeys renames old WS session keys from non-canonical format
 // (agent:X:ws-userId-ts) to canonical format (agent:X:ws:direct:ts).
 // The last hyphen-delimited segment is the base36 timestamp used as convId.

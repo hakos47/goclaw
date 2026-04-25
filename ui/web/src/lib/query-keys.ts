@@ -21,6 +21,7 @@ export const queryKeys = {
   sessions: {
     all: ["sessions"] as const,
     list: (params: Record<string, unknown>) => ["sessions", params] as const,
+    summary: ["sessions", "summary"] as const,
   },
   traces: {
     all: ["traces"] as const,

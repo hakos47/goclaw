@@ -30,6 +30,10 @@ import {
   FileArchive,
   DatabaseBackup,
   Webhook,
+  Target,
+  LifeBuoy,
+  Briefcase,
+  TrendingUp,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { SidebarGroup } from "./sidebar-group";
@@ -40,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { usePendingPairingsCount } from "@/hooks/use-pending-pairings-count";
 import { useAuthStore } from "@/stores/use-auth-store";
 import { useTenants } from "@/hooks/use-tenants";
+import { useSessionsSummary } from "@/pages/sessions/hooks/use-sessions";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -49,6 +54,7 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onNavItemClick }: SidebarProps) {
   const { t } = useTranslation("sidebar");
   const { pendingCount } = usePendingPairingsCount();
+  const { data: summary } = useSessionsSummary();
   const role = useAuthStore((s) => s.role);
   const { isOwner } = useTenants();
   const isAdmin = role === "admin" || role === "owner";
@@ -92,6 +98,14 @@ export function Sidebar({ collapsed, onNavItemClick }: SidebarProps) {
 
         <SidebarGroup label={t("groups.conversations")} collapsed={collapsed}>
           <SidebarItem to={ROUTES.SESSIONS} icon={History} label={t("nav.sessions")} collapsed={collapsed} />
+          {!collapsed && (
+            <div className="ml-4 space-y-0.5 mt-0.5">
+              <SidebarItem to={`${ROUTES.SESSIONS}?category=inbound`} icon={Target} label={t("nav.sessionsInbound")} collapsed={collapsed} badge={summary?.inbound} className="h-8 py-1" />
+              <SidebarItem to={`${ROUTES.SESSIONS}?category=support`} icon={LifeBuoy} label={t("nav.sessionsSupport")} collapsed={collapsed} badge={summary?.support} className="h-8 py-1" />
+              <SidebarItem to={`${ROUTES.SESSIONS}?category=ops`} icon={Briefcase} label={t("nav.sessionsOps")} collapsed={collapsed} badge={summary?.ops} className="h-8 py-1" />
+              <SidebarItem to={`${ROUTES.SESSIONS}?category=evolution`} icon={TrendingUp} label={t("nav.sessionsEvolution")} collapsed={collapsed} badge={summary?.evolution} className="h-8 py-1" />
+            </div>
+          )}
           <SidebarItem to={ROUTES.PENDING_MESSAGES} icon={Inbox} label={t("nav.pendingMessages")} collapsed={collapsed} />
           <SidebarItem to={ROUTES.CONTACTS} icon={Contact} label={t("nav.contacts")} collapsed={collapsed} />
         </SidebarGroup>

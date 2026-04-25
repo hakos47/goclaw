@@ -42,6 +42,15 @@ func (l *Loop) Run(ctx context.Context, req RunRequest) (*RunResult, error) {
 		Payload: map[string]any{"message": req.Message},
 	})
 
+	// Apply strategic nudges based on channel category
+	if req.ChannelType == "whatsapp" || req.ChannelType == "facebook" {
+		leadNudge := "\n\n## STRATEGIC DIRECTIVE: INBOUND LEAD CONVERSION\n" +
+			"This chat is categorized as an 'Inbound Lead'. Your priority is to detect user needs " +
+			"and proactively propose solutions. Use available skills to generate structured proposals " +
+			"and save them directly to the Knowledge Vault for future follow-up."
+		req.ExtraSystemPrompt += leadNudge
+	}
+
 	// Create trace
 	var traceID uuid.UUID
 	isChildTrace := req.ParentTraceID != uuid.Nil && l.traceCollector != nil

@@ -10,6 +10,7 @@ import (
 	httpapi "github.com/nextlevelbuilder/goclaw/internal/http"
 	"github.com/nextlevelbuilder/goclaw/internal/i18n"
 	"github.com/nextlevelbuilder/goclaw/internal/store"
+	"github.com/nextlevelbuilder/goclaw/internal/store/pg"
 	"github.com/nextlevelbuilder/goclaw/pkg/protocol"
 )
 
@@ -31,13 +32,64 @@ func (m *SessionsMethods) Register(router *gateway.MethodRouter) {
 	router.Register(protocol.MethodSessionsDelete, m.handleDelete)
 	router.Register(protocol.MethodSessionsReset, m.handleReset)
 	router.Register(protocol.MethodSessionsCompact, m.handleCompact)
+	router.Register(protocol.MethodSessionsSummary, m.handleSummary)
+}
+
+func (m *SessionsMethods) handleSummary(ctx context.Context, client *gateway.Client, req *protocol.RequestFrame) {
+	tid := store.TenantIDFromContext(ctx)
+	
+	// Categorization logic: 
+	// - Inbound: WhatsApp / Facebook
+	// - Support: Telegram / Discord
+	// - Ops: Web / Direct
+	// - Evolution: Internal / Self-Evolution
+	
+	// Group counts by channel_type directly in SQL for efficiency.
+	query := `SELECT 
+		CASE 
+			WHEN channel_type IN ('whatsapp', 'facebook') THEN 'inbound'
+			WHEN channel_type IN ('telegram', 'discord') THEN 'support'
+			WHEN channel_type IN ('web', 'direct', '') OR channel_type IS NULL THEN 'ops'
+			WHEN channel_type IN ('internal', 'evolution') THEN 'evolution'
+			ELSE 'ops'
+		END as category,
+		count(*) as count
+		FROM sessions 
+		WHERE tenant_id = $1
+		GROUP BY category`
+	
+	rows, err := m.sessions.(*pg.PGSessionStore).DB().QueryContext(ctx, query, tid)
+	if err != nil {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInternal, err.Error()))
+		return
+	}
+	defer rows.Close()
+
+	summary := map[string]int{
+		"inbound":   0,
+		"support":   0,
+		"ops":       0,
+		"evolution": 0,
+	}
+	for rows.Next() {
+		var cat string
+		var count int
+		if err := rows.Scan(&cat, &count); err == nil {
+			summary[cat] = count
+		}
+	}
+
+	client.SendResponse(protocol.NewOKResponse(req.ID, map[string]any{
+		"categories": summary,
+	}))
 }
 
 type sessionsListParams struct {
-	AgentID string `json:"agentId"`
-	Channel string `json:"channel"` // optional: filter by channel prefix ("ws", "telegram")
-	Limit   int    `json:"limit"`
-	Offset  int    `json:"offset"`
+	AgentID  string `json:"agentId"`
+	Channel  string `json:"channel"`  // optional: filter by channel prefix ("ws", "telegram")
+	Category string `json:"category"` // optional: "inbound", "support", "ops", "evolution"
+	Limit    int    `json:"limit"`
+	Offset   int    `json:"offset"`
 }
 
 func (m *SessionsMethods) handleList(ctx context.Context, client *gateway.Client, req *protocol.RequestFrame) {
@@ -53,6 +105,7 @@ func (m *SessionsMethods) handleList(ctx context.Context, client *gateway.Client
 	opts := store.SessionListOpts{
 		AgentID:  params.AgentID,
 		Channel:  params.Channel,
+		Category: params.Category,
 		Limit:    params.Limit,
 		Offset:   params.Offset,
 		TenantID: store.TenantIDFromContext(ctx),

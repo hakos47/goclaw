@@ -50,6 +50,19 @@ func buildSessionFilter(ctx context.Context, opts store.SessionListOpts, tableAl
 		idx++
 	}
 
+	if opts.Category != "" {
+		switch opts.Category {
+		case "inbound":
+			conditions = append(conditions, fmt.Sprintf("%schannel_type IN ('whatsapp', 'facebook')", prefix))
+		case "support":
+			conditions = append(conditions, fmt.Sprintf("%schannel_type IN ('telegram', 'discord')", prefix))
+		case "ops":
+			conditions = append(conditions, fmt.Sprintf("(%schannel_type IN ('web', 'direct', '') OR %schannel_type IS NULL)", prefix, prefix))
+		case "evolution":
+			conditions = append(conditions, fmt.Sprintf("%schannel_type IN ('internal', 'evolution')", prefix))
+		}
+	}
+
 	// Resolve tenant filter — opts override beats ctx.
 	tenantID := opts.TenantID
 	if tenantID == uuid.Nil && !store.IsCrossTenant(ctx) {
@@ -95,7 +108,7 @@ func (s *PGSessionStore) List(ctx context.Context, agentID string) []store.Sessi
 
 	var scanned []sessionListRow
 	if err := pkgSqlxDB.SelectContext(ctx, &scanned,
-		"SELECT session_key, messages, created_at, updated_at, label, channel, user_id, COALESCE(metadata, '{}') AS metadata FROM sessions"+where+" ORDER BY updated_at DESC",
+		"SELECT session_key, messages, created_at, updated_at, label, channel, source_channel_id, channel_type, user_id, COALESCE(metadata, '{}') AS metadata FROM sessions"+where+" ORDER BY updated_at DESC",
 		args...); err != nil {
 		return nil
 	}
@@ -134,7 +147,7 @@ func (s *PGSessionStore) ListPaged(ctx context.Context, opts store.SessionListOp
 
 	// Fetch page using jsonb_array_length to avoid loading full messages
 	nextIdx := len(whereArgs) + 1
-	selectQ := fmt.Sprintf(`SELECT session_key, jsonb_array_length(messages) AS message_count, created_at, updated_at, label, channel, user_id, COALESCE(metadata, '{}') AS metadata
+	selectQ := fmt.Sprintf(`SELECT session_key, jsonb_array_length(messages) AS message_count, created_at, updated_at, label, channel, source_channel_id, channel_type, user_id, COALESCE(metadata, '{}') AS metadata
 		FROM sessions%s ORDER BY updated_at DESC LIMIT $%d OFFSET $%d`, where, nextIdx, nextIdx+1)
 	selectArgs := append(append([]any{}, whereArgs...), limit, offset)
 
@@ -177,7 +190,7 @@ func (s *PGSessionStore) ListPagedRich(ctx context.Context, opts store.SessionLi
 
 	// Fetch page with agent name via LEFT JOIN
 	const richCols = `s.session_key, jsonb_array_length(s.messages) AS message_count, s.created_at, s.updated_at,
-		s.label, s.channel, s.user_id, COALESCE(s.metadata, '{}') AS metadata,
+		s.label, s.channel, s.source_channel_id, s.channel_type, s.user_id, COALESCE(s.metadata, '{}') AS metadata,
 		s.model, s.provider, s.input_tokens, s.output_tokens,
 		COALESCE(a.display_name, '') AS agent_name,
 		octet_length(s.messages::text) / 4 + 12000 AS estimated_tokens,
@@ -342,8 +355,8 @@ func (s *PGSessionStore) loadFromDB(ctx context.Context, key string) *store.Sess
 
 	var sessionKey string
 	var msgsJSON []byte
-	var summary, model, provider, channel, label, spawnedBy, userID *string
-	var agentID, teamID *uuid.UUID
+	var summary, model, provider, channel, label, spawnedBy, userID, channelType *string
+	var agentID, teamID, sourceChannelID *uuid.UUID
 	var inputTokens, outputTokens int64
 	var compactionCount, memoryFlushCompactionCount, spawnDepth int
 	var memoryFlushAt int64
@@ -352,13 +365,13 @@ func (s *PGSessionStore) loadFromDB(ctx context.Context, key string) *store.Sess
 
 	tid := tenantIDForInsert(ctx)
 	err = tx.QueryRowContext(ctx,
-		`SELECT session_key, messages, summary, model, provider, channel,
+		`SELECT session_key, messages, summary, model, provider, channel, source_channel_id, channel_type,
 		 input_tokens, output_tokens, compaction_count,
 		 memory_flush_compaction_count, memory_flush_at,
 		 label, spawned_by, spawn_depth, agent_id, user_id,
 		 COALESCE(metadata, '{}'), created_at, updated_at, team_id
 		 FROM sessions WHERE session_key = $1 AND tenant_id = $2`, key, tid,
-	).Scan(&sessionKey, &msgsJSON, &summary, &model, &provider, &channel,
+	).Scan(&sessionKey, &msgsJSON, &summary, &model, &provider, &channel, &sourceChannelID, &channelType,
 		&inputTokens, &outputTokens, &compactionCount,
 		&memoryFlushCompactionCount, &memoryFlushAt,
 		&label, &spawnedBy, &spawnDepth, &agentID, &userID,
@@ -387,6 +400,8 @@ func (s *PGSessionStore) loadFromDB(ctx context.Context, key string) *store.Sess
 		AgentUUID:                  derefUUID(agentID),
 		UserID:                     derefStr(userID),
 		TeamID:                     teamID,
+		SourceChannelID:            sourceChannelID,
+		ChannelType:                derefStr(channelType),
 		Model:                      derefStr(model),
 		Provider:                   derefStr(provider),
 		Channel:                    derefStr(channel),

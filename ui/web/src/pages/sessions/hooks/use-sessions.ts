@@ -11,6 +11,7 @@ import { userFriendlyError } from "@/lib/error-utils";
 
 interface UseSessionsOptions {
   agentFilter?: string;
+  category?: string;
   limit?: number;
   offset?: number;
 }
@@ -19,26 +20,26 @@ export function useSessions(opts: UseSessionsOptions = {}) {
   const ws = useWs();
   const connected = useAuthStore((s) => s.connected);
   const queryClient = useQueryClient();
-  const { agentFilter, limit, offset } = opts;
+  const { agentFilter, category, limit, offset } = opts;
 
-  const queryKey = queryKeys.sessions.list({ agentFilter, limit, offset });
+    const queryKey = queryKeys.sessions.list({ agentFilter, category, limit, offset });
 
-  const { data, isPending: loading } = useQuery({
-    queryKey,
-    queryFn: async () => {
-      if (!ws.isConnected) return { sessions: [] as SessionInfo[], total: 0 };
-      const res = await ws.call<{ sessions: SessionInfo[]; total?: number }>(Methods.SESSIONS_LIST, {
-        agentId: agentFilter || undefined,
-        limit,
-        offset,
-      });
-      return { sessions: res.sessions ?? [], total: res.total ?? 0 };
-    },
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
-    enabled: connected,
-  });
-
+    const { data, isPending: loading } = useQuery({
+      queryKey,
+      queryFn: async () => {
+        if (!ws.isConnected) return { sessions: [] as SessionInfo[], total: 0 };
+        const res = await ws.call<{ sessions: SessionInfo[]; total?: number }>(Methods.SESSIONS_LIST, {
+          agentId: agentFilter || undefined,
+          category,
+          limit,
+          offset,
+        });
+        return { sessions: res.sessions ?? [], total: res.total ?? 0 };
+      },
+      placeholderData: (prev) => prev,
+      staleTime: 60_000,
+      enabled: connected,
+    });
   const sessions = data?.sessions ?? [];
   const total = data?.total ?? 0;
 
@@ -105,4 +106,20 @@ export function useSessions(opts: UseSessionsOptions = {}) {
   );
 
   return { sessions, total, loading, refresh: invalidate, preview, deleteSession, resetSession, patchSession };
+}
+
+export function useSessionsSummary() {
+  const ws = useWs();
+  const connected = useAuthStore((s) => s.connected);
+
+  return useQuery({
+    queryKey: queryKeys.sessions.summary,
+    queryFn: async () => {
+      if (!ws.isConnected) return { inbound: 0, support: 0, ops: 0, evolution: 0 };
+      const res = await ws.call<{ categories: Record<string, number> }>(Methods.SESSIONS_SUMMARY, {});
+      return res.categories;
+    },
+    staleTime: 30_000, // Refresh every 30s
+    enabled: connected,
+  });
 }
