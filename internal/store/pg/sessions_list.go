@@ -56,8 +56,10 @@ func buildSessionFilter(ctx context.Context, opts store.SessionListOpts, tableAl
 			conditions = append(conditions, fmt.Sprintf("%schannel_type IN ('whatsapp', 'facebook')", prefix))
 		case "support":
 			conditions = append(conditions, fmt.Sprintf("%schannel_type IN ('telegram', 'discord')", prefix))
-		case "ops":
-			conditions = append(conditions, fmt.Sprintf("(%schannel_type IN ('web', 'direct', '') OR %schannel_type IS NULL)", prefix, prefix))
+		case "personal":
+			conditions = append(conditions, fmt.Sprintf("(%schannel_type IN ('web', 'direct', '') OR %schannel_type IS NULL) AND %ssession_key NOT LIKE '%%system%%'", prefix, prefix, prefix))
+		case "system":
+			conditions = append(conditions, fmt.Sprintf("%ssession_key LIKE '%%system%%'", prefix))
 		case "evolution":
 			conditions = append(conditions, fmt.Sprintf("%schannel_type IN ('internal', 'evolution')", prefix))
 		}

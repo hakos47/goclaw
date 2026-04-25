@@ -46,6 +46,10 @@ export function SessionsPage() {
                        category === "ops" ? Briefcase :
                        category === "evolution" ? TrendingUp : History;
 
+  const detailSession = detailKey
+    ? sessions.find((s) => s.key === decodeURIComponent(detailKey))
+    : null;
+
   if (detailSession) {
     return (
       <SessionDetailPage
@@ -62,7 +66,17 @@ export function SessionsPage() {
     );
   }
 
-  // ... filtered logic (unchanged)
+  const filtered = sessions.filter((s) => {
+    const q = search.toLowerCase();
+    const meta = s.metadata;
+    return (
+      s.key.toLowerCase().includes(q) ||
+      (s.label ?? "").toLowerCase().includes(q) ||
+      (meta?.display_name ?? "").toLowerCase().includes(q) ||
+      (meta?.username ?? "").toLowerCase().includes(q) ||
+      (meta?.chat_title ?? "").toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="p-4 sm:p-6 pb-10">

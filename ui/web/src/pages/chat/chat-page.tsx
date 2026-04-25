@@ -48,6 +48,7 @@ export function ChatPage() {
 
   const {
     sessions,
+    categorized,
     loading: sessionsLoading,
     refresh: refreshSessions,
     buildNewSessionKey,
@@ -198,6 +199,7 @@ export function ChatPage() {
               agentId={agentId}
               onAgentChange={handleAgentChange}
               sessions={sessions}
+              categorized={categorized}
               sessionsLoading={sessionsLoading}
               activeSessionKey={sessionKey}
               onSessionSelect={handleSessionSelectMobile}
@@ -211,6 +213,7 @@ export function ChatPage() {
           agentId={agentId}
           onAgentChange={handleAgentChange}
           sessions={sessions}
+          categorized={categorized}
           sessionsLoading={sessionsLoading}
           activeSessionKey={sessionKey}
           onSessionSelect={handleSessionSelect}

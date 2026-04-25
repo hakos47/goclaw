@@ -1,7 +1,8 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { MessageSquare, Trash2 } from "lucide-react";
+import { MessageSquare, Trash2, Phone, Globe, User } from "lucide-react";
 import { formatRelativeTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -23,41 +24,33 @@ interface SessionSwitcherProps {
 
 /** Build a human-friendly label from session metadata or key */
 function sessionLabel(session: SessionInfo): string {
-  if (session.metadata?.chat_title) return session.metadata.chat_title;
-  if (session.metadata?.display_name) return session.metadata.display_name;
-  if (session.metadata?.user_name) return session.metadata.user_name;
+  // 1. Explicit label (manual or generated)
   if (session.label) return session.label;
 
+  // 2. Metadata: Chat Title (Groups)
+  if (session.metadata?.chat_title) return session.metadata.chat_title;
+  
+  // 3. Metadata: User Identity
+  if (session.metadata?.display_name) return session.metadata.display_name;
+  if (session.metadata?.user_name) return session.metadata.user_name;
+
   const parts = session.key.split(":");
-  if (parts.length < 3) return session.key;
-
-  const channel = parts[2];
-  if (channel === "whatsapp" && parts.length >= 5) {
-    const jid = parts[4];
-    if (!jid) return session.key;
-    const namePart = jid.split("@")[0] ?? jid;
-    if (jid.endsWith("@s.whatsapp.net")) {
-      return `WA: ${namePart}`;
+  
+  // 4. WhatsApp specific logic
+  if (session.channelType === "whatsapp" || session.key.includes("whatsapp")) {
+    const jid = parts[parts.length - 1];
+    if (jid) {
+      const namePart = jid.split("@")[0] ?? jid;
+      if (jid.endsWith("@s.whatsapp.net")) return `WA: ${namePart}`;
+      if (jid.endsWith("@lid")) return `ID: ${namePart.slice(-8)}`;
+      if (jid.endsWith("@g.us")) return `Group: ${namePart.slice(0, 12)}…`;
     }
-    if (jid.endsWith("@g.us")) {
-      return `WA Group: ${namePart.slice(0, 12)}…`;
-    }
-    return `WhatsApp ${jid.slice(0, 12)}`;
   }
 
+  // 5. Generic Fallback
   const scope = parts.length >= 3 ? parts.slice(2).join(":") : session.key;
-
-  if (scope.startsWith("ws-")) {
-    const segments = scope.split("-");
-    const shortId = segments[segments.length - 1] ?? scope;
-    return `Chat ${shortId}`;
-  }
-  if (scope.startsWith("ws:direct:")) {
-    const uuid = scope.replace("ws:direct:", "");
-    return `Chat ${uuid.slice(0, 8)}`;
-  }
+  if (scope.startsWith("ws:direct:")) return `Chat ${scope.replace("ws:direct:", "").slice(0, 8)}`;
   if (scope.startsWith("team:")) return `Team ${scope.replace("team:", "").slice(0, 12)}`;
-  if (scope.startsWith("cron:")) return `Cron ${scope.replace("cron:", "")}`;
 
   return scope.length > 24 ? scope.slice(0, 21) + "…" : scope;
 }
@@ -91,20 +84,25 @@ export const SessionSwitcher = memo(function SessionSwitcher({ sessions, activeK
         {sessions.map((session) => {
           const isActive = session.key === activeKey;
           const label = sessionLabel(session);
+          
+          const isWhatsApp = session.channelType === "whatsapp" || session.key.includes("whatsapp");
+          const Icon = isWhatsApp ? Phone : (session.channelType === "web" ? Globe : MessageSquare);
 
           return (
             <button
               key={session.key}
               type="button"
               onClick={() => onSelect(session.key)}
-              className={`group relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+              title={session.key}
+              className={cn(
+                "group relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors",
                 isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted"
-              }`}
+              )}
             >
-              <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <Icon className={cn("h-3.5 w-3.5 shrink-0", isWhatsApp ? "text-green-500/70" : "text-muted-foreground")} />
               <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-[13px]">{label}</div>
-                <div className="flex items-center gap-1.5 text-xs-plus text-muted-foreground">
+                <div className="truncate font-medium text-[12px] leading-tight">{label}</div>
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground opacity-70">
                   <span>{session.messageCount} {tc("messages")}</span>
                   <span>·</span>
                   <span>{formatRelativeTime(session.updated)}</span>

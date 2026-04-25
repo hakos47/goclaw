@@ -41,17 +41,18 @@ func (m *SessionsMethods) handleSummary(ctx context.Context, client *gateway.Cli
 	// Categorization logic: 
 	// - Inbound: WhatsApp / Facebook
 	// - Support: Telegram / Discord
-	// - Ops: Web / Direct
+	// - Personal: Web / Direct (non-system)
 	// - Evolution: Internal / Self-Evolution
+	// - System: Automated / Diagnostic (contains 'system' in key)
 	
 	// Group counts by channel_type directly in SQL for efficiency.
 	query := `SELECT 
 		CASE 
 			WHEN channel_type IN ('whatsapp', 'facebook') THEN 'inbound'
 			WHEN channel_type IN ('telegram', 'discord') THEN 'support'
-			WHEN channel_type IN ('web', 'direct', '') OR channel_type IS NULL THEN 'ops'
 			WHEN channel_type IN ('internal', 'evolution') THEN 'evolution'
-			ELSE 'ops'
+			WHEN session_key LIKE '%system%' THEN 'system'
+			ELSE 'personal'
 		END as category,
 		count(*) as count
 		FROM sessions 
@@ -68,8 +69,9 @@ func (m *SessionsMethods) handleSummary(ctx context.Context, client *gateway.Cli
 	summary := map[string]int{
 		"inbound":   0,
 		"support":   0,
-		"ops":       0,
+		"personal":  0,
 		"evolution": 0,
+		"system":    0,
 	}
 	for rows.Next() {
 		var cat string

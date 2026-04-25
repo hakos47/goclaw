@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useWs } from "@/hooks/use-ws";
 import { useWsEvent } from "@/hooks/use-ws-event";
 import { Methods, Events } from "@/api/protocol";
@@ -8,6 +8,8 @@ import { toast } from "@/stores/use-toast-store";
 import i18next from "i18next";
 import { userFriendlyError } from "@/lib/error-utils";
 import { uniqueId } from "@/lib/utils";
+
+export type SessionCategory = "personal" | "inbound" | "support" | "system" | "evolution";
 
 /**
  * Manages the session list for the chat sidebar.
@@ -45,6 +47,35 @@ export function useChatSessions(agentId: string) {
     loadSessions();
   }, [loadSessions]);
 
+  const categorized = useMemo(() => {
+    const groups: Record<SessionCategory, SessionInfo[]> = {
+      personal: [],
+      inbound: [],
+      support: [],
+      system: [],
+      evolution: [],
+    };
+
+    sessions.forEach((s) => {
+      const type = s.channelType || "";
+      const isSystem = s.key.includes("system");
+
+      if (["whatsapp", "facebook"].includes(type)) {
+        groups.inbound.push(s);
+      } else if (["telegram", "discord"].includes(type)) {
+        groups.support.push(s);
+      } else if (["internal", "evolution"].includes(type)) {
+        groups.evolution.push(s);
+      } else if (isSystem) {
+        groups.system.push(s);
+      } else {
+        groups.personal.push(s);
+      }
+    });
+
+    return groups;
+  }, [sessions]);
+
   const buildNewSessionKey = useCallback(() => {
     const convId = uniqueId();
     return `agent:${agentId}:ws:direct:${convId}`;
@@ -76,6 +107,7 @@ export function useChatSessions(agentId: string) {
 
   return {
     sessions,
+    categorized,
     loading,
     error,
     refresh: loadSessions,

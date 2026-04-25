@@ -6,6 +6,8 @@ export interface SessionInfo {
   created: string;
   updated: string;
   label?: string;
+  sourceChannelID?: string;
+  channelType?: string;
   model?: string;
   provider?: string;
   channel?: string;

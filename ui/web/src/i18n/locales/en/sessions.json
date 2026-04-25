@@ -1,6 +1,7 @@
 {
   "title": "Sessions",
   "description": "Browse conversation sessions",
+  "descriptionCategory": "Browsing {{category}} sessions",
   "searchPlaceholder": "Search sessions...",
   "emptyTitle": "No sessions yet",
   "emptyDescription": "Sessions will appear here once you start chatting.",
