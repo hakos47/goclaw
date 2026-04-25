@@ -32,6 +32,7 @@ const (
 	ctxAgentKey    toolContextKey = "tool_agent_key"
 	ctxSessionKey  toolContextKey = "tool_session_key" // origin session key for announce routing
 	ctxRunKind     toolContextKey = "tool_run_kind"    // "notification", "announce", "delegation"
+	ctxSubagentDepth toolContextKey = "tool_subagent_depth"
 )
 
 // Well-known channel names used for routing and access control.
@@ -168,6 +169,15 @@ func WithRunKind(ctx context.Context, kind string) context.Context {
 // RunKindFromCtx returns the run kind from context, or empty string.
 func RunKindFromCtx(ctx context.Context) string {
 	v, _ := ctx.Value(ctxRunKind).(string)
+	return v
+}
+
+func WithSubagentDepth(ctx context.Context, depth int) context.Context {
+	return context.WithValue(ctx, ctxSubagentDepth, depth)
+}
+
+func SubagentDepthFromCtx(ctx context.Context) int {
+	v, _ := ctx.Value(ctxSubagentDepth).(int)
 	return v
 }
 

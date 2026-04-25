@@ -193,7 +193,8 @@ const (
 	MethodZaloPersonalContacts  = "zalo.personal.contacts"
 
 	// WhatsApp
-	MethodWhatsAppQRStart = "whatsapp.qr.start"
+	MethodWhatsAppQRStart   = "whatsapp.qr.start"
+	MethodWhatsAppResolveJID = "whatsapp.id.resolve"
 )
 
 // Agent hooks (Phase 3)

@@ -32,6 +32,7 @@ func (l *Loop) runViaPipeline(ctx context.Context, req RunRequest) (*RunResult, 
 	p := pipeline.NewDefaultPipeline(deps)
 	state := pipeline.NewRunState(input, nil, model, provider)
 
+	println("[ADAPTER] Calling p.Run(), runID:", input.RunID)
 	pResult, err := p.Run(ctx, state)
 	if err != nil {
 		return nil, err

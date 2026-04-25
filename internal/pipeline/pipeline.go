@@ -53,6 +53,9 @@ func NewDefaultPipeline(deps PipelineDeps) *Pipeline {
 func (p *Pipeline) Run(ctx context.Context, state *RunState) (*RunResult, error) {
 	start := time.Now()
 
+	println("[PIPELINE] Pipeline.Run ENTRY", "run_id:", state.RunID, "maxIter:", p.Deps.Config.MaxIterations, "ctxErr:", ctx.Err())
+	slog.Info("pipeline run started", "run_id", state.RunID, "model", state.Model, "max_iterations", p.Deps.Config.MaxIterations)
+
 	// 1. Setup (once)
 	for _, stage := range p.setup {
 		if err := stage.Execute(ctx, state); err != nil {
@@ -68,6 +71,8 @@ func (p *Pipeline) Run(ctx context.Context, state *RunState) (*RunResult, error)
 	// BreakLoop: complete all remaining stages in this iteration (ObserveStage must
 	// capture FinalContent), then exit the outer loop.
 	// AbortRun: exit inner loop immediately (unrecoverable, e.g. over budget after compaction).
+	slog.Info("pipeline debug: starting iteration loop", "max_iterations", p.Deps.Config.MaxIterations, "run_id", state.RunID)
+	println("[PIPELINE DEBUG] max_iterations =", p.Deps.Config.MaxIterations, "run_id", state.RunID)
 	for state.Iteration = 0; state.Iteration < p.Deps.Config.MaxIterations; state.Iteration++ {
 		for _, stage := range p.iteration {
 			if err := stage.Execute(ctx, state); err != nil {
@@ -99,6 +104,7 @@ func (p *Pipeline) Run(ctx context.Context, state *RunState) (*RunResult, error)
 		}
 	}
 
+	slog.Info("pipeline debug: iteration loop done", "iterations_completed", state.Iteration, "run_id", state.RunID)
 	// 3. Finalize (once, errors logged not fatal).
 	// Use background context so finalize stages can persist state even after cancellation.
 	finalizeCtx := context.WithoutCancel(ctx)

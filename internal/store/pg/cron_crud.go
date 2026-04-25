@@ -186,7 +186,7 @@ func (s *PGCronStore) EnableJob(ctx context.Context, jobID string, enabled bool)
 		return fmt.Errorf("invalid job ID: %s", jobID)
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return err
 	}

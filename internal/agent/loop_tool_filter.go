@@ -80,7 +80,9 @@ func (l *Loop) buildFilteredTools(req *RunRequest, hadBootstrap bool, iteration,
 	}
 
 	// Hide channel-specific tools when channel type doesn't match.
-	if req.ChannelType != "" {
+	// EXCEPTION: Allow cross-channel tools when calling from web chat ('ws')
+	// so agents can use WhatsApp/Telegram tools while interacting via dashboard.
+	if req.ChannelType != "" && req.ChannelType != "ws" {
 		filtered := toolDefs[:0:0]
 		for _, td := range toolDefs {
 			if tool, ok := l.tools.Get(td.Function.Name); ok {

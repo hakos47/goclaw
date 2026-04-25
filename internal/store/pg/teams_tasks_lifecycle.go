@@ -58,7 +58,7 @@ func (s *PGTeamStore) AssignTask(ctx context.Context, taskID, agentID, teamID uu
 }
 
 func (s *PGTeamStore) CompleteTask(ctx context.Context, taskID, teamID uuid.UUID, result string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (s *PGTeamStore) CompleteTask(ctx context.Context, taskID, teamID uuid.UUID
 }
 
 func (s *PGTeamStore) CancelTask(ctx context.Context, taskID, teamID uuid.UUID, reason string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (s *PGTeamStore) CancelTask(ctx context.Context, taskID, teamID uuid.UUID, 
 }
 
 func (s *PGTeamStore) FailTask(ctx context.Context, taskID, teamID uuid.UUID, errMsg string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (s *PGTeamStore) FailTask(ctx context.Context, taskID, teamID uuid.UUID, er
 
 // FailPendingTask marks a pending or blocked task as failed (post-turn validation).
 func (s *PGTeamStore) FailPendingTask(ctx context.Context, taskID, teamID uuid.UUID, errMsg string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func (s *PGTeamStore) ReviewTask(ctx context.Context, taskID, teamID uuid.UUID) 
 }
 
 func (s *PGTeamStore) ApproveTask(ctx context.Context, taskID, teamID uuid.UUID, comment string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return err
 	}
@@ -268,7 +268,7 @@ func (s *PGTeamStore) ApproveTask(ctx context.Context, taskID, teamID uuid.UUID,
 }
 
 func (s *PGTeamStore) RejectTask(ctx context.Context, taskID, teamID uuid.UUID, reason string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return err
 	}

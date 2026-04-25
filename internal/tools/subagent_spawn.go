@@ -97,7 +97,13 @@ func (sm *SubagentManager) Spawn(
 	// WithoutCancel preserves all context values (agent ID, workspace, trace info, etc.)
 	// but parent Done() no longer propagates. Manual cancel via taskCancel() still works.
 	detached := context.WithoutCancel(ctx)
-	taskCtx, taskCancel := context.WithCancel(detached)
+
+	// Apply hard timeout (Circuit Breaker)
+	timeout := cfg.MaxSubagentTimeout
+	if timeout <= 0 {
+		timeout = 10 * time.Minute
+	}
+	taskCtx, taskCancel := context.WithTimeout(detached, timeout)
 	subTask.cancelFunc = taskCancel
 
 	// Assign DB UUID inside lock to avoid race with runTask goroutine.
@@ -183,6 +189,14 @@ func (sm *SubagentManager) RunSync(
 	if sm.taskStore != nil {
 		sm.persistCreate(ctx, subTask)
 	}
+
+	// Apply hard timeout (Circuit Breaker)
+	timeout := cfg.MaxSubagentTimeout
+	if timeout <= 0 {
+		timeout = 10 * time.Minute
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	iterations := sm.executeTask(ctx, subTask)
 

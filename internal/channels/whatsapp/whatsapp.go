@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -83,6 +84,25 @@ func (c *Channel) cacheQR(pngB64 string) {
 
 // Client returns the underlying whatsmeow client for tool access.
 func (c *Channel) Client() *whatsmeow.Client { return c.client }
+
+// OwnerJID returns the designated owner JID from config.
+func (c *Channel) OwnerJID() string { return c.config.OwnerJID }
+
+// OwnerUserID returns the UserID associated with the owner (default "system").
+func (c *Channel) OwnerUserID() string {
+	if c.config.OwnerUserID != "" {
+		return c.config.OwnerUserID
+	}
+	return "system"
+}
+
+// UserID returns the UserID for a given sender ID.
+func (c *Channel) UserID(senderID string) string {
+	if idx := strings.IndexByte(senderID, '@'); idx > 0 {
+		return senderID[:idx]
+	}
+	return senderID
+}
 
 // ListGroupMembers implements channels.GroupMemberProvider.
 // Uses WhatsApp's group info API to list all participants.

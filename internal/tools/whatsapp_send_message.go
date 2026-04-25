@@ -81,10 +81,10 @@ func (t *WhatsAppSendTool) Execute(ctx context.Context, args map[string]any) *Re
 	}
 
 	waMsg := &waE2E.Message{
-		Conversation: new(message),
+		Conversation: &message,
 	}
 
-	resp, err := client.SendMessage(context.Background(), chatJID, waMsg)
+	resp, err := client.SendMessage(ctx, chatJID, waMsg)
 	if err != nil {
 		return ErrorResult(fmt.Sprintf("whatsapp_send_message: send failed: %v", err))
 	}

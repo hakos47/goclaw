@@ -256,6 +256,36 @@ export function ChannelsSection({ data, onSave, saving }: Props) {
                       </div>
                     )}
 
+                    {/* WhatsApp-specific */}
+                    {ch === "whatsapp" && (
+                      <div className="space-y-3">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Owner Configuration</p>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <div className="grid gap-1.5">
+                            <Label>Owner JID</Label>
+                            <Input
+                              type="password"
+                              placeholder="34603... @s.whatsapp.net"
+                              value={chData.owner_jid ?? ""}
+                              disabled={isSecret(chData.owner_jid)}
+                              readOnly={isSecret(chData.owner_jid)}
+                              onChange={(e) => updateChannel(ch, { owner_jid: e.target.value })}
+                            />
+                            <p className="text-[10px] text-muted-foreground">Privileged WhatsApp ID for reports and unfiltered chat.</p>
+                          </div>
+                          <div className="grid gap-1.5">
+                            <Label>Owner User ID</Label>
+                            <Input
+                              placeholder="system"
+                              value={chData.owner_user_id ?? ""}
+                              onChange={(e) => updateChannel(ch, { owner_user_id: e.target.value })}
+                            />
+                            <p className="text-[10px] text-muted-foreground">GoClaw UserID (default: system). Gives full access.</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Feishu-specific */}
                     {ch === "feishu" && chData.connection_mode !== undefined && (
                       <div className="grid gap-1.5">

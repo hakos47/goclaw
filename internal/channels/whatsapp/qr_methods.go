@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	qrcode "github.com/skip2/go-qrcode"
+	"go.mau.fi/whatsmeow/types"
 
 	"github.com/nextlevelbuilder/goclaw/internal/channels"
 	"github.com/nextlevelbuilder/goclaw/internal/gateway"
@@ -37,6 +40,68 @@ func NewQRMethods(instanceStore store.ChannelInstanceStore, manager *channels.Ma
 
 func (m *QRMethods) Register(router *gateway.MethodRouter) {
 	router.Register(goclawprotocol.MethodWhatsAppQRStart, m.handleQRStart)
+	router.Register(goclawprotocol.MethodWhatsAppResolveJID, m.handleResolveJID)
+}
+
+func (m *QRMethods) handleResolveJID(ctx context.Context, client *gateway.Client, req *goclawprotocol.RequestFrame) {
+	var params struct {
+		InstanceID string `json:"instance_id"`
+		Phone      string `json:"phone"`
+	}
+	if req.Params != nil {
+		_ = json.Unmarshal(req.Params, &params)
+	}
+
+	if params.Phone == "" {
+		client.SendResponse(goclawprotocol.NewErrorResponse(req.ID, goclawprotocol.ErrInvalidRequest, "phone is required"))
+		return
+	}
+
+	instID, err := uuid.Parse(params.InstanceID)
+	if err != nil {
+		client.SendResponse(goclawprotocol.NewErrorResponse(req.ID, goclawprotocol.ErrInvalidRequest, "invalid instance_id"))
+		return
+	}
+
+	inst, err := m.instanceStore.Get(ctx, instID)
+	if err != nil || inst.ChannelType != channels.TypeWhatsApp {
+		client.SendResponse(goclawprotocol.NewErrorResponse(req.ID, goclawprotocol.ErrNotFound, "whatsapp instance not found"))
+		return
+	}
+
+	ch, ok := m.manager.GetChannel(inst.Name)
+	if !ok {
+		client.SendResponse(goclawprotocol.NewErrorResponse(req.ID, goclawprotocol.ErrNotFound, "channel not running"))
+		return
+	}
+	wa, ok := ch.(*Channel)
+	if !ok || !wa.IsAuthenticated() {
+		client.SendResponse(goclawprotocol.NewErrorResponse(req.ID, goclawprotocol.ErrInvalidRequest, "channel not authenticated"))
+		return
+	}
+
+	// Resolve
+	phone := strings.TrimPrefix(params.Phone, "+")
+	phone = strings.ReplaceAll(phone, " ", "")
+	targetJID := types.NewJID(phone, types.DefaultUserServer)
+
+	resp, err := wa.client.GetUserInfo(ctx, []types.JID{targetJID})
+	if err != nil {
+		client.SendResponse(goclawprotocol.NewErrorResponse(req.ID, goclawprotocol.ErrInternal, fmt.Sprintf("resolve failed: %v", err)))
+		return
+	}
+
+	info, ok := resp[targetJID]
+	if !ok {
+		client.SendResponse(goclawprotocol.NewErrorResponse(req.ID, goclawprotocol.ErrNotFound, "number not found on WhatsApp"))
+		return
+	}
+
+	client.SendResponse(goclawprotocol.NewOKResponse(req.ID, map[string]any{
+		"jid": targetJID.String(),
+		"lid": info.LID.String(),
+		"verified": !info.LID.IsEmpty(),
+	}))
 }
 
 func (m *QRMethods) handleQRStart(ctx context.Context, client *gateway.Client, req *goclawprotocol.RequestFrame) {

@@ -20,7 +20,7 @@ func (s *PGCronStore) UpdateJob(ctx context.Context, jobID string, patch store.C
 		return nil, fmt.Errorf("invalid job ID: %s", jobID)
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return nil, err
 	}

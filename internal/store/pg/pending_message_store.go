@@ -86,7 +86,7 @@ func (s *PGPendingMessageStore) Compact(ctx context.Context, deleteIDs []uuid.UU
 		return nil
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return fmt.Errorf("begin compact tx: %w", err)
 	}

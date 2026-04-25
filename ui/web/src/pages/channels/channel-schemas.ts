@@ -16,6 +16,11 @@ export interface FieldDef {
   disabledWhen?: { key: string; value: string; hint?: string };
   /** Hide in an "Advanced" collapsible section — for rarely-needed fields */
   advanced?: boolean;
+  /** Optional button action next to the input */
+  action?: {
+    type: "whatsapp_resolve_jid";
+    label: string;
+  };
 }
 
 // --- Shared option lists ---
@@ -175,6 +180,15 @@ export const configSchema: Record<string, FieldDef[]> = {
     { key: "block_reply", label: "Block Reply", type: "select", options: blockReplyOptions, defaultValue: "inherit", help: "Deliver intermediate text during tool iterations" },
   ],
   whatsapp: [
+    { 
+      key: "owner_jid", 
+      label: "Owner JID", 
+      type: "text", 
+      placeholder: "34603... @s.whatsapp.net", 
+      help: "WhatsApp JID for the designated owner (privileged access, unfiltered chat, proactive reports)",
+      action: { type: "whatsapp_resolve_jid", label: "Search ID" }
+    },
+    { key: "owner_user_id", label: "Owner User ID", type: "text", defaultValue: "system", help: "GoClaw UserID to map the owner to (default: system). Gives full access to system logs and tasks." },
     { key: "dm_policy", label: "DM Policy", type: "select", options: dmPolicyOptions, defaultValue: "pairing" },
     { key: "group_policy", label: "Group Policy", type: "select", options: groupPolicyOptions, defaultValue: "pairing" },
     { key: "require_mention", label: "Require @Mention in Groups", type: "boolean", help: "Only respond in group chats when the bot is explicitly @mentioned" },

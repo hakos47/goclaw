@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -156,6 +157,33 @@ func requireTenantID(ctx context.Context) (uuid.UUID, error) {
 }
 
 // --- Scope-based query helpers (thin wrappers around base/) ---
+
+// setTenantContext sets the current tenant ID in the session for RLS.
+// This MUST be called within a transaction (using SET LOCAL) to avoid affecting other connections.
+func setTenantContext(ctx context.Context, tx *sql.Tx, tenantID uuid.UUID) error {
+	// PostgreSQL does not support parameters in SET commands.
+	// Since tenantID is a uuid.UUID, it is safe to interpolate.
+	query := fmt.Sprintf("SET LOCAL app.current_tenant = '%s'", tenantID.String())
+	_, err := tx.ExecContext(ctx, query)
+	return err
+}
+
+// beginTxWithTenant starts a transaction and sets the tenant context for RLS.
+// Use this for all write operations on tables protected by RLS.
+func beginTxWithTenant(ctx context.Context, db *sql.DB) (*sql.Tx, error) {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	tid := store.TenantIDFromContext(ctx)
+	if tid != uuid.Nil {
+		if err := setTenantContext(ctx, tx, tid); err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("set rls context: %w", err)
+		}
+	}
+	return tx, nil
+}
 
 // scopeClause extracts QueryScope from context and generates WHERE conditions.
 func scopeClause(ctx context.Context, startParam int) (clause string, args []any, nextParam int, err error) {

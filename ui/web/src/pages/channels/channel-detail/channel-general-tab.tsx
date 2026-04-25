@@ -20,6 +20,7 @@ import { channelTypeLabels } from "../channels-status-view";
 const ESSENTIAL_CONFIG_KEYS: Record<string, string[]> = {
   _default: ["dm_policy", "group_policy", "require_mention"],
   telegram: ["dm_policy", "group_policy", "mention_mode", "require_mention"],
+  whatsapp: ["owner_jid", "owner_user_id", "dm_policy", "group_policy", "require_mention"],
 };
 
 interface ChannelGeneralTabProps {
@@ -150,6 +151,7 @@ export function ChannelGeneralTab({ instance, agents, onUpdate }: ChannelGeneral
             values={policyValues}
             onChange={handlePolicyChange}
             idPrefix="cd-pol"
+            instanceId={instance.id}
             contextValues={policyValues}
           />
         </section>

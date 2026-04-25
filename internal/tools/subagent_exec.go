@@ -132,6 +132,7 @@ func (sm *SubagentManager) executeTask(ctx context.Context, task *SubagentTask) 
 	// subCtx overrides parent_span_id so child spans nest under subRootSpanID.
 	// traceCtx retains the original parent_span_id for the root subagent span.
 	subTraceCtx := tracing.WithParentSpanID(traceCtx, subRootSpanID)
+	ctx = WithSubagentDepth(ctx, task.Depth)
 
 	var model string
 	var finalContent string

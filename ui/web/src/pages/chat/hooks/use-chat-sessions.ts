@@ -27,7 +27,7 @@ export function useChatSessions(agentId: string) {
     try {
       const res = await ws.call<{ sessions: SessionInfo[] }>(
         Methods.SESSIONS_LIST,
-        { agentId, channel: "ws" },
+        { agentId },
       );
       const sorted = (res.sessions ?? []).sort(
         (a: SessionInfo, b: SessionInfo) =>

@@ -91,7 +91,7 @@ func (s *PGTeamStore) CreateTask(ctx context.Context, task *store.TeamTaskData) 
 	}
 
 	// Wrap entire operation in a transaction for atomicity.
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return err
 	}
@@ -413,7 +413,7 @@ func (s *PGTeamStore) DeleteTask(ctx context.Context, taskID, teamID uuid.UUID) 
 		args = append(args, tid)
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return fmt.Errorf("delete task: begin tx: %w", err)
 	}
@@ -465,7 +465,7 @@ func (s *PGTeamStore) DeleteTasks(ctx context.Context, taskIDs []uuid.UUID, team
 		args = append(args, tid)
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return nil, fmt.Errorf("delete tasks: begin tx: %w", err)
 	}

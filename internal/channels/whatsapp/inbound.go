@@ -42,31 +42,53 @@ func (c *Channel) handleIncomingMessage(evt *events.Message) {
 	chatID := chatJID.String()
 
 	peerKind := "direct"
-	if chatJID.Server == types.GroupServer {
+	if chatJID.Server == "g.us" {
 		peerKind = "group"
 	}
 
-	slog.Debug("whatsapp incoming", "peer", peerKind, "sender", senderID, "chat", chatID,
-		"addressing", evt.Info.AddressingMode, "policy", c.config.GroupPolicy)
-
-	// DM/Group policy check.
-	if peerKind == "direct" {
-		if !c.checkDMPolicy(ctx, senderID, chatID) {
-			return
-		}
-	} else {
-		if !c.checkGroupPolicy(ctx, senderID, chatID) {
-			slog.Info("whatsapp group message rejected by policy", "sender_id", senderID, "chat_id", chatID, "policy", c.config.GroupPolicy)
-			return
-		}
+	// Owner Bypass: if sender is the designated owner, skip all policy checks and force identity.
+	isOwner := c.OwnerJID() != "" && (senderID == c.OwnerJID() || strings.HasPrefix(senderID, strings.Split(c.OwnerJID(), "@")[0]))
+	forceUserID := ""
+	if isOwner {
+		forceUserID = c.OwnerUserID()
+		slog.Debug("whatsapp inbound: owner bypass applied", "sender_id", senderID, "as_user", forceUserID)
 	}
 
-	if !c.IsAllowed(senderID) {
-		slog.Info("whatsapp message rejected by allowlist", "sender_id", senderID)
-		return
+	slog.Debug("whatsapp inbound", "sender_id", senderID, "chat_id", chatID, "peer_kind", peerKind,
+		"addressing", evt.Info.AddressingMode, "policy", c.config.GroupPolicy, "is_owner", isOwner)
+
+	// DM/Group policy check (skipped for owner).
+	if !isOwner {
+		if peerKind == "direct" {
+			if !c.checkDMPolicy(ctx, senderID, chatID) {
+				return
+			}
+		} else {
+			if !c.checkGroupPolicy(ctx, senderID, chatID) {
+				slog.Info("whatsapp group message rejected by policy", "sender_id", senderID, "chat_id", chatID, "policy", c.config.GroupPolicy)
+				return
+			}
+		}
+
+		if !c.IsAllowed(senderID) {
+			slog.Info("whatsapp message rejected by allowlist", "sender_id", senderID)
+			return
+		}
 	}
 
 	content := extractTextContent(evt.Message)
+
+	// Handshake Confirmation Logic
+	if isOwner && strings.ToUpper(strings.TrimSpace(content)) == "CONFIRMAR" {
+		slog.Info("whatsapp inbound: owner confirmed linkage", "sender_id", senderID)
+		response := "✅ Vinculación confirmada. Tus privilegios de Administrador (UserID: " + forceUserID + ") están ahora activos en este canal. Hablamos sin filtros."
+		waMsg := &waE2E.Message{
+			Conversation: &response,
+		}
+		c.client.SendMessage(ctx, chatJID, waMsg)
+		// Handshake fully consumed by system — do not propagate to agents
+		return
+	}
 
 	var mediaList []media.MediaInfo
 	mediaList = c.downloadMedia(evt)
@@ -151,10 +173,25 @@ func (c *Channel) handleIncomingMessage(evt *events.Message) {
 		content = fmt.Sprintf("[From: %s]\n%s", senderName, content)
 	}
 
-	// Collect contact.
+	// Collect contacts.
 	if cc := c.ContactCollector(); cc != nil {
+		// 1. Sender (always an individual user)
 		cc.EnsureContact(ctx, c.Type(), c.Name(), senderID, senderID,
-			metadata["user_name"], "", peerKind, "user", "", "")
+			metadata["user_name"], "", "direct", "user", "", "")
+
+		// 2. Group (if this is a group message)
+		if peerKind == "group" {
+			// Try to get group name from whatsmeow store if we don't have a specific title here.
+			groupName := ""
+			if info, err := c.client.Store.Contacts.GetContact(ctx, chatJID); err == nil {
+				groupName = info.FullName
+				if groupName == "" {
+					groupName = info.PushName
+				}
+			}
+			cc.EnsureContact(ctx, c.Type(), c.Name(), chatID, "",
+				groupName, "", "group", "group", "", "")
+		}
 	}
 
 	// Typing indicator.
@@ -169,8 +206,11 @@ func (c *Channel) handleIncomingMessage(evt *events.Message) {
 
 	// Derive userID from senderID.
 	userID := senderID
-	if idx := strings.IndexByte(senderID, '|'); idx > 0 {
+	if idx := strings.IndexByte(senderID, '@'); idx > 0 {
 		userID = senderID[:idx]
+	}
+	if forceUserID != "" {
+		userID = forceUserID
 	}
 
 	c.Bus().PublishInbound(bus.InboundMessage{

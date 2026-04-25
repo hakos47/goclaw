@@ -1,7 +1,10 @@
 import { useTranslation } from "react-i18next";
+import { useState } from "react";
+import { Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MultiUserPicker } from "@/components/shared/multi-user-picker";
 import {
@@ -13,6 +16,9 @@ import {
 } from "@/components/ui/select";
 import { ToolNameSelect } from "@/components/shared/tool-name-select";
 import { SkillNameSelect } from "@/components/shared/skill-name-select";
+import { useWs } from "@/hooks/use-ws";
+import { Methods } from "@/api/protocol";
+import { toast } from "@/stores/use-toast-store";
 import type { FieldDef } from "./channel-schemas";
 
 const INHERIT = "__inherit__";
@@ -22,12 +28,13 @@ interface ChannelFieldsProps {
   values: Record<string, unknown>;
   onChange: (key: string, value: unknown) => void;
   idPrefix: string;
+  instanceId?: string;
   isEdit?: boolean; // for credentials: show "leave blank to keep" hint
   /** Extra values for showWhen checks (e.g. config values visible to credential fields) */
   contextValues?: Record<string, unknown>;
 }
 
-export function ChannelFields({ fields, values, onChange, idPrefix, isEdit, contextValues }: ChannelFieldsProps) {
+export function ChannelFields({ fields, values, onChange, idPrefix, instanceId, isEdit, contextValues }: ChannelFieldsProps) {
   const allValues = contextValues ? { ...contextValues, ...values } : values;
   return (
     <div className="grid gap-3">
@@ -58,6 +65,7 @@ export function ChannelFields({ fields, values, onChange, idPrefix, isEdit, cont
             value={values[field.key]}
             onChange={(v) => onChange(field.key, v)}
             id={`${idPrefix}-${field.key}`}
+            instanceId={instanceId}
             isEdit={isEdit}
             disabled={disabled}
             disabledHint={disabledHint}
@@ -68,11 +76,66 @@ export function ChannelFields({ fields, values, onChange, idPrefix, isEdit, cont
   );
 }
 
+function FieldAction({ 
+  field, 
+  value, 
+  instanceId,
+  onChange 
+}: { 
+  field: FieldDef; 
+  value: string; 
+  instanceId?: string;
+  onChange: (v: string) => void 
+}) {
+  const ws = useWs();
+  const [loading, setLoading] = useState(false);
+
+  const handleAction = async () => {
+    if (!field.action || !instanceId || !value) return;
+
+    setLoading(true);
+    try {
+      if (field.action.type === "whatsapp_resolve_jid") {
+        const res = await ws.call(Methods.WHATSAPP_ID_RESOLVE, {
+          instance_id: instanceId,
+          phone: value
+        }) as { jid: string; lid: string };
+        
+        if (res.jid) {
+          onChange(res.jid);
+          toast.success("Identity Resolved", `JID: ${res.jid}`);
+        }
+      }
+    } catch (err: any) {
+      toast.error("Discovery Failed", err.message || String(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!field.action || !instanceId) return null;
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="h-9 px-2 gap-1.5"
+      onClick={handleAction}
+      disabled={loading || !value}
+    >
+      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+      <span className="hidden sm:inline text-xs">{field.action.label}</span>
+    </Button>
+  );
+}
+
 function FieldRenderer({
   field,
   value,
   onChange,
   id,
+  instanceId,
   isEdit,
   disabled,
   disabledHint,
@@ -81,6 +144,7 @@ function FieldRenderer({
   value: unknown;
   onChange: (v: unknown) => void;
   id: string;
+  instanceId?: string;
   isEdit?: boolean;
   disabled?: boolean;
   disabledHint?: string;
@@ -101,13 +165,24 @@ function FieldRenderer({
           <Label htmlFor={id}>
             {label}{labelSuffix}{editHint}
           </Label>
-          <Input
-            id={id}
-            type={field.type}
-            value={(value as string) ?? ""}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={field.placeholder}
-          />
+          <div className="flex gap-2">
+            <Input
+              id={id}
+              className="flex-1"
+              type={field.type}
+              value={(value as string) ?? ""}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={field.placeholder}
+            />
+            {field.action && (
+              <FieldAction 
+                field={field} 
+                value={(value as string) ?? ""} 
+                instanceId={instanceId}
+                onChange={(v) => onChange(v)} 
+              />
+            )}
+          </div>
           {help && <p className="text-xs text-muted-foreground">{help}</p>}
         </div>
       );

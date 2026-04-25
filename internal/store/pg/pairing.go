@@ -246,7 +246,7 @@ func (s *PGPairingStore) ListPaired(ctx context.Context) []store.PairedDeviceDat
 func (s *PGPairingStore) MigrateGroupChatID(ctx context.Context, channel, oldChatID, newChatID string) error {
 	tid := tenantIDForInsert(ctx)
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return fmt.Errorf("begin migrate tx: %w", err)
 	}

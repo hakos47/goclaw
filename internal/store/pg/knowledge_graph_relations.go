@@ -172,7 +172,7 @@ func (s *PGKnowledgeGraphStore) IngestExtraction(ctx context.Context, agentID, u
 	if err != nil {
 		return nil, fmt.Errorf("kg ingest extraction: agent: %w", err)
 	}
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return nil, err
 	}

@@ -68,7 +68,7 @@ func (s *PGSkillStore) DeleteSkill(ctx context.Context, id uuid.UUID) error {
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (s *PGSkillStore) CreateSkillManaged(ctx context.Context, p store.SkillCrea
 		status = "active"
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("begin tx: %w", err)
 	}
@@ -243,7 +243,7 @@ func (s *PGSkillStore) GetSkillHashBySlug(ctx context.Context, slug string) (str
 // that MUST be called to release the lock (commits the transaction).
 func (s *PGSkillStore) GetNextVersionLocked(ctx context.Context, slug string) (int, func() error, error) {
 	tenantID := tenantIDForInsert(ctx)
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return 0, nil, fmt.Errorf("begin tx: %w", err)
 	}

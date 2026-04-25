@@ -113,7 +113,13 @@ func (s *PGContactStore) ListContacts(ctx context.Context, opts store.ContactLis
 		args = append(args, opts.Offset)
 	}
 
-	rows, err := s.db.QueryContext(ctx, query, args...)
+	tx, err := beginTxWithTenant(ctx, s.db)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -131,6 +137,7 @@ func (s *PGContactStore) ListContacts(ctx context.Context, opts store.ContactLis
 		}
 		contacts = append(contacts, c)
 	}
+	tx.Commit()
 	return contacts, rows.Err()
 }
 
@@ -167,7 +174,13 @@ func (s *PGContactStore) GetContactsBySenderIDs(ctx context.Context, senderIDs [
 		WHERE sender_id IN (%s) AND tenant_id = %s
 		ORDER BY sender_id, last_seen_at DESC`, strings.Join(placeholders, ","), tenantPH)
 
-	rows, err := s.db.QueryContext(ctx, query, args...)
+	tx, err := beginTxWithTenant(ctx, s.db)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -185,17 +198,23 @@ func (s *PGContactStore) GetContactsBySenderIDs(ctx context.Context, senderIDs [
 		}
 		result[c.SenderID] = c
 	}
+	tx.Commit()
 	return result, rows.Err()
 }
 
 func (s *PGContactStore) GetContactByID(ctx context.Context, id uuid.UUID) (*store.ChannelContact, error) {
-	tid := store.TenantIDFromContext(ctx)
-	row := s.db.QueryRowContext(ctx,
+	tx, err := beginTxWithTenant(ctx, s.db)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	row := tx.QueryRowContext(ctx,
 		`SELECT id, channel_type, channel_instance, sender_id, user_id,
 			display_name, username, avatar_url, peer_kind, contact_type,
 			thread_id, thread_type, merged_id,
 			first_seen_at, last_seen_at
-		FROM channel_contacts WHERE id = $1 AND tenant_id = $2`, id, tid)
+		FROM channel_contacts WHERE id = $1 AND tenant_id = current_setting('app.current_tenant')::uuid`, id)
 	var c store.ChannelContact
 	if err := row.Scan(
 		&c.ID, &c.ChannelType, &c.ChannelInstance, &c.SenderID, &c.UserID,
@@ -205,6 +224,7 @@ func (s *PGContactStore) GetContactByID(ctx context.Context, id uuid.UUID) (*sto
 	); err != nil {
 		return nil, err
 	}
+	tx.Commit()
 	return &c, nil
 }
 

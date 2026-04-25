@@ -141,24 +141,27 @@ func (s *PGAgentStore) Create(ctx context.Context, agent *store.AgentData) error
 }
 
 func (s *PGAgentStore) GetByKey(ctx context.Context, agentKey string) (*store.AgentData, error) {
+	tx, err := beginTxWithTenant(ctx, s.db)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	var row *sql.Row
 	if store.IsCrossTenant(ctx) {
-		row = s.db.QueryRowContext(ctx,
+		row = tx.QueryRowContext(ctx,
 			`SELECT `+agentSelectCols+`
 			 FROM agents WHERE agent_key = $1 AND deleted_at IS NULL`, agentKey)
 	} else {
-		tid := store.TenantIDFromContext(ctx)
-		if tid == uuid.Nil {
-			return nil, fmt.Errorf("agent not found: %s", agentKey)
-		}
-		row = s.db.QueryRowContext(ctx,
+		row = tx.QueryRowContext(ctx,
 			`SELECT `+agentSelectCols+`
-			 FROM agents WHERE agent_key = $1 AND deleted_at IS NULL AND tenant_id = $2`, agentKey, tid)
+			 FROM agents WHERE agent_key = $1 AND deleted_at IS NULL AND (tenant_id::text = current_setting('app.current_tenant', true) OR current_setting('app.current_tenant', true) = '')`, agentKey)
 	}
 	d, err := scanAgentRow(row)
 	if err != nil {
 		return nil, fmt.Errorf("agent not found: %s", agentKey)
 	}
+	tx.Commit()
 	return d, nil
 }
 
@@ -275,6 +278,12 @@ func (s *PGAgentStore) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *PGAgentStore) List(ctx context.Context, ownerID string) ([]store.AgentData, error) {
+	tx, err := beginTxWithTenant(ctx, s.db)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	q := `SELECT ` + agentSelectCols + ` FROM agents WHERE deleted_at IS NULL`
 	var args []any
 	argIdx := 1
@@ -292,31 +301,42 @@ func (s *PGAgentStore) List(ctx context.Context, ownerID string) ([]store.AgentD
 	}
 
 	q += " ORDER BY created_at DESC"
-	rows, err := s.db.QueryContext(ctx, q, args...)
+	rows, err := tx.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	return scanAgentRows(rows)
+	res, err := scanAgentRows(rows)
+	if err == nil {
+		tx.Commit()
+	}
+	return res, err
 }
 
 func (s *PGAgentStore) GetDefault(ctx context.Context) (*store.AgentData, error) {
+	tx, err := beginTxWithTenant(ctx, s.db)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	if store.IsCrossTenant(ctx) {
-		row := s.db.QueryRowContext(ctx,
+		row := tx.QueryRowContext(ctx,
 			`SELECT `+agentSelectCols+`
 			 FROM agents WHERE deleted_at IS NULL
 			 ORDER BY is_default DESC, created_at ASC LIMIT 1`)
-		return scanAgentRow(row)
+		res, err := scanAgentRow(row)
+		if err == nil { tx.Commit() }
+		return res, err
 	}
-	tid := store.TenantIDFromContext(ctx)
-	if tid == uuid.Nil {
-		return nil, fmt.Errorf("agent not found: default")
-	}
-	row := s.db.QueryRowContext(ctx,
+
+	row := tx.QueryRowContext(ctx,
 		`SELECT `+agentSelectCols+`
-		 FROM agents WHERE deleted_at IS NULL AND tenant_id = $1
-		 ORDER BY is_default DESC, created_at ASC LIMIT 1`, tid)
-	return scanAgentRow(row)
+		 FROM agents WHERE deleted_at IS NULL AND (tenant_id::text = current_setting('app.current_tenant', true) OR current_setting('app.current_tenant', true) = '')
+		 ORDER BY is_default DESC, created_at ASC LIMIT 1`)
+	res, err := scanAgentRow(row)
+	if err == nil { tx.Commit() }
+	return res, err
 }
 
 // --- Access Control ---

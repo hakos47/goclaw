@@ -452,29 +452,61 @@ func runGateway() {
 		}
 	}
 
-	// Wire WhatsApp client getter on all WhatsApp tools
-	waClientGetter := func(channelName string) (*whatsmeow.Client, bool, bool) {
-		ch, ok := channelMgr.GetChannel(channelName)
-		if !ok {
-			return nil, false, false
-		}
-		wa, ok := ch.(*whatsapp.Channel)
-		if !ok {
-			return nil, false, false
-		}
-		return wa.Client(), wa.IsAuthenticated(), true
+	// --- CONSOLIDATED WHATSAPP TOOLS REGISTRATION & WIRING ---
+	waTools := []tools.Tool{
+		tools.NewWhatsAppSendTool(), tools.NewWhatsAppListChatsTool(),
+		tools.NewWhatsAppListContactsTool(), tools.NewWhatsAppGroupCreateTool(),
+		tools.NewWhatsAppGroupInviteTool(), tools.NewWhatsAppGroupMembersTool(),
+		tools.NewWhatsAppProfilePhotoTool(), tools.NewWhatsAppFindContactTool(),
+		tools.NewWhatsAppGetProfileTool(), tools.NewWhatsAppTestTargetTool(),
+		tools.NewWhatsAppGetStatusTool(),
+		tools.NewWhatsAppReadMessagesTool(),
+		tools.NewWhatsAppVerifyOwnerTool(pgStores.ChannelInstances),
 	}
-	for _, toolName := range []string{
-		"whatsapp_send_message", "whatsapp_list_chats", "whatsapp_list_contacts",
-		"whatsapp_group_create", "whatsapp_group_invite", "whatsapp_group_members",
-		"whatsapp_profile_photo",
-	} {
-		if t, ok := toolsReg.Get(toolName); ok {
-			if wcg, ok := t.(tools.WhatsAppClientGetterAware); ok {
-				wcg.SetWhatsAppClientGetter(waClientGetter)
+	for _, t := range waTools {
+		toolsReg.RegisterWithMetadata(t, tools.ToolMetadata{
+			Name:         t.Name(),
+			Capabilities: []tools.ToolCapability{tools.CapMutating},
+			Group:        "messaging",
+		})
+	}
+
+	waClientGetter := func(channelName string) (*whatsmeow.Client, bool, bool) {
+		var target *whatsapp.Channel
+		if ch, ok := channelMgr.GetChannel(channelName); ok {
+			target, _ = ch.(*whatsapp.Channel)
+		}
+		if target == nil || channelName == "ws" || channelName == "" {
+			for _, name := range channelMgr.GetEnabledChannels() {
+				if ch, ok := channelMgr.GetChannel(name); ok {
+					if wa, ok := ch.(*whatsapp.Channel); ok {
+						if target == nil || wa.IsAuthenticated() {
+							target = wa
+							if wa.IsAuthenticated() { break }
+						}
+					}
+				}
 			}
 		}
+		if target == nil {
+			slog.Warn("whatsapp.getter: channel not found", "requested", channelName, "available", channelMgr.GetEnabledChannels())
+			return nil, false, false
+		}
+		return target.Client(), target.IsAuthenticated(), true
 	}
+
+	for _, t := range waTools {
+		if wcg, ok := t.(tools.WhatsAppClientGetterAware); ok {
+			wcg.SetWhatsAppClientGetter(waClientGetter)
+		}
+		if csg, ok := t.(interface{ SetContactStoreGetter(func() store.ContactStore) }); ok {
+			csg.SetContactStoreGetter(func() store.ContactStore { return pgStores.Contacts })
+		}
+		if ssa, ok := t.(interface{ SetSessionStore(func() store.SessionStore) }); ok {
+			ssa.SetSessionStore(func() store.SessionStore { return pgStores.Sessions })
+		}
+	}
+	slog.Info("whatsapp tools registered and wired", "count", len(waTools))
 
 	// Load channel instances from DB.
 	var instanceLoader *channels.InstanceLoader

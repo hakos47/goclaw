@@ -84,23 +84,26 @@ func (t *WhatsAppProfilePhotoTool) Execute(ctx context.Context, args map[string]
 		Preview: !hd,
 	}
 	picInfo, err := client.GetProfilePictureInfo(ctx, jid, params)
-	if err != nil {
-		return ErrorResult("whatsapp_profile_photo: failed to get profile photo: " + err.Error())
+	
+	result := map[string]any{
+		"jid":          jidStr,
+		"has_photo":    false,
+		"photo_url":    "",
+		"hd_photo_url": "",
+		"is_hd":        hd,
 	}
 
-	data, _ := json.Marshal(map[string]any{
-		"jid":         jidStr,
-		"has_photo":   picInfo != nil && picInfo.URL != "",
-		"photo_url":   "",
-		"hd_photo_url": "",
-	})
-	if picInfo != nil {
-		data, _ = json.Marshal(map[string]any{
-			"jid":          jidStr,
-			"has_photo":    true,
-			"photo_url":    picInfo.URL,
-			"hd_photo_url": picInfo.URL,
-		})
+	if err == nil && picInfo != nil && picInfo.URL != "" {
+		result["has_photo"] = true
+		if hd {
+			result["hd_photo_url"] = picInfo.URL
+		} else {
+			result["photo_url"] = picInfo.URL
+		}
+		// If we got one, we can sometimes guess the other or just report what we have
+		result["direct_url"] = picInfo.URL
 	}
+
+	data, _ := json.Marshal(result)
 	return NewResult(string(data))
 }

@@ -338,5 +338,6 @@ var fallbackPreviewToolNames = []string{
 	"whatsapp_list_chats", "whatsapp_list_contacts",
 	"whatsapp_send_message", "whatsapp_group_create",
 	"whatsapp_group_invite", "whatsapp_group_members",
-	"whatsapp_profile_photo",
+	"whatsapp_profile_photo", "whatsapp_find_contact",
+	"whatsapp_get_profile", "whatsapp_get_status", "whatsapp_read_messages", "whatsapp_test_target",
 }

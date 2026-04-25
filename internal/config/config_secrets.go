@@ -52,6 +52,7 @@ func (c *Config) MaskedCopy() *Config {
 	maskNonEmpty(&cp.Channels.Feishu.AppSecret)
 	maskNonEmpty(&cp.Channels.Feishu.EncryptKey)
 	maskNonEmpty(&cp.Channels.Feishu.VerificationToken)
+	maskNonEmpty(&cp.Channels.WhatsApp.OwnerJID)
 
 	// Mask TTS API keys
 	maskNonEmpty(&cp.Tts.OpenAI.APIKey)
@@ -99,6 +100,8 @@ func (c *Config) StripSecrets() {
 	c.Channels.Feishu.AppSecret = ""
 	c.Channels.Feishu.EncryptKey = ""
 	c.Channels.Feishu.VerificationToken = ""
+	c.Channels.WhatsApp.OwnerJID = ""
+	c.Channels.WhatsApp.OwnerUserID = ""
 
 	// TTS API keys
 	c.Tts.OpenAI.APIKey = ""
@@ -172,6 +175,8 @@ func (c *Config) ApplyDBSecrets(secrets map[string]string) {
 	}
 
 	apply("gateway.token", &c.Gateway.Token)
+	apply("whatsapp.owner_jid", &c.Channels.WhatsApp.OwnerJID)
+	apply("whatsapp.owner_user_id", &c.Channels.WhatsApp.OwnerUserID)
 	apply("tts.openai.api_key", &c.Tts.OpenAI.APIKey)
 	apply("tts.elevenlabs.api_key", &c.Tts.ElevenLabs.APIKey)
 	apply("tts.minimax.api_key", &c.Tts.MiniMax.APIKey)
@@ -191,6 +196,8 @@ func (c *Config) ExtractDBSecrets() map[string]string {
 	}
 
 	collect("gateway.token", c.Gateway.Token)
+	collect("whatsapp.owner_jid", c.Channels.WhatsApp.OwnerJID)
+	collect("whatsapp.owner_user_id", c.Channels.WhatsApp.OwnerUserID)
 	collect("tts.openai.api_key", c.Tts.OpenAI.APIKey)
 	collect("tts.elevenlabs.api_key", c.Tts.ElevenLabs.APIKey)
 	collect("tts.minimax.api_key", c.Tts.MiniMax.APIKey)

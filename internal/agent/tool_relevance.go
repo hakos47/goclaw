@@ -283,6 +283,11 @@ func containsToolKeyword(msg, toolName string) bool {
 		"whatsapp_group_invite":    {"whatsapp", "invite", "link", "invitacion", "invitar"},
 		"whatsapp_group_members":   {"whatsapp", "members", "participantes", "miembros"},
 		"whatsapp_profile_photo":   {"whatsapp", "photo", "profile", "foto", "perfil"},
+		"whatsapp_find_contact":    {"whatsapp", "contact", "buscar", "encontrar", "contacto", "contactos", "agenda", "find"},
+		"whatsapp_get_profile":     {"whatsapp", "profile", "perfil", "info", "informacion"},
+		"whatsapp_get_status":      {"whatsapp", "status", "estado", "bio", "biografia"},
+		"whatsapp_read_messages":   {"whatsapp", "read", "messages", "leer", "mensajes", "historial", "history"},
+		"whatsapp_test_target":     {"whatsapp", "test", "prueba", "diagnostico", "diagnostic"},
 	}
 
 	if words, ok := keywords[toolName]; ok {

@@ -20,19 +20,23 @@ type Tool interface {
 	Execute(ctx context.Context, args map[string]any) *Result
 }
 
+// RateLimiter defines the interface for tool rate limiting.
+type RateLimiter interface {
+	Allow(key string) error
+}
+
 // ContextualTool receives channel/chat context before execution.
 type ContextualTool interface {
 	Tool
 	SetContext(channel, chatID string)
 }
 
-// PeerKindAware tools receive the peer kind (direct/group) before execution.
+// PeerKindAware interface.
 type PeerKindAware interface {
 	SetPeerKind(peerKind string)
 }
 
-// SandboxAware tools receive sandbox scope key before execution.
-// Used by exec tool to route commands through Docker containers.
+// SandboxAware tools.
 type SandboxAware interface {
 	SetSandboxKey(key string)
 }
@@ -40,94 +44,88 @@ type SandboxAware interface {
 // AsyncCallback is invoked when an async tool completes.
 type AsyncCallback func(ctx context.Context, result *Result)
 
-// AsyncTool supports asynchronous execution with completion callbacks.
+// AsyncTool supports asynchronous execution.
 type AsyncTool interface {
 	Tool
 	SetCallback(cb AsyncCallback)
 }
 
-// --- Configuration interfaces for reducing type assertions in cmd/ wiring ---
-
-// InterceptorAware tools can receive ContextFile and Memory interceptors.
+// InterceptorAware tools.
 type InterceptorAware interface {
 	SetContextFileInterceptor(*ContextFileInterceptor)
 	SetMemoryInterceptor(*MemoryInterceptor)
 }
 
-// ConfigPermAware tools receive a ConfigPermissionStore for group permission checks.
+// ConfigPermAware tools.
 type ConfigPermAware interface {
 	SetConfigPermStore(store.ConfigPermissionStore)
 }
 
-// WorkspaceInterceptorAware tools can receive a WorkspaceInterceptor for team workspace validation.
+// WorkspaceInterceptorAware tools.
 type WorkspaceInterceptorAware interface {
 	SetWorkspaceInterceptor(*WorkspaceInterceptor)
 }
 
-// MemoryStoreAware tools can receive a MemoryStore for Postgres queries.
+// MemoryStoreAware tools.
 type MemoryStoreAware interface {
 	SetMemoryStore(store.MemoryStore)
 }
 
-// ApprovalAware tools can receive an ExecApprovalManager.
+// ApprovalAware tools.
 type ApprovalAware interface {
 	SetApprovalManager(*ExecApprovalManager, string)
 }
 
-// PathAllowable tools can allow extra path prefixes for read access.
+// PathAllowable tools.
 type PathAllowable interface {
 	AllowPaths(...string)
 }
 
-// PathDenyable tools can deny access to specific path prefixes within the workspace.
+// PathDenyable tools.
 type PathDenyable interface {
 	DenyPaths(...string)
 }
 
-// SessionStoreAware tools can receive a SessionStore for session queries.
+// SessionStoreAware tools.
 type SessionStoreAware interface {
 	SetSessionStore(store.SessionStore)
 }
 
-// BusAware tools can receive a MessageBus for publishing messages.
+// BusAware tools.
 type BusAware interface {
 	SetMessageBus(*bus.MessageBus)
 }
 
-// ChannelSender abstracts sending a message to a channel.
-// Implemented by channels.Manager.SendToChannel.
+// ChannelSender abstracts sending a message.
 type ChannelSender func(ctx context.Context, channel, chatID, content string) error
 
-// ChannelSenderAware tools can receive a channel sender function.
+// ChannelSenderAware tools.
 type ChannelSenderAware interface {
 	SetChannelSender(ChannelSender)
 }
 
-// ChannelTenantChecker returns the tenant UUID for a channel instance.
-// Used by the message tool to prevent cross-tenant sends.
-// Returns (tenantID, exists). Zero tenantID means legacy/config-based channel.
+// ChannelTenantChecker returns tenant UUID for channel.
 type ChannelTenantChecker func(channelName string) (tenantID uuid.UUID, exists bool)
 
-// ChannelTenantCheckerAware tools can receive a channel tenant checker.
+// ChannelTenantCheckerAware tools.
 type ChannelTenantCheckerAware interface {
 	SetChannelTenantChecker(ChannelTenantChecker)
 }
 
-// WhatsAppClientGetter returns (client, authenticated, exists) for a channel name.
+// WhatsAppClientGetter returns (client, authenticated, exists).
 type WhatsAppClientGetter func(channelName string) (*whatsmeow.Client, bool, bool)
 
-// WhatsAppClientGetterAware tools receive a WhatsApp client getter.
+// WhatsAppClientGetterAware tools.
 type WhatsAppClientGetterAware interface {
 	SetWhatsAppClientGetter(WhatsAppClientGetter)
 }
 
-// ChannelAware is optionally implemented by tools that only work on specific channel types.
-// Tools implementing this are filtered out when the current channel type doesn't match.
+// ChannelAware tools.
 type ChannelAware interface {
 	RequiredChannelTypes() []string
 }
 
-// ToProviderDef converts a Tool to a providers.ToolDefinition for LLM APIs.
+// ToProviderDef converts a Tool to a providers.ToolDefinition.
 func ToProviderDef(t Tool) providers.ToolDefinition {
 	return providers.ToolDefinition{
 		Type: "function",

@@ -27,6 +27,15 @@ export default defineConfig(({ mode }) => {
           target: `http://${backendHost}:${backendPort}`,
           changeOrigin: true,
           timeout: 30000, // 30s for large audio responses
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq) => {
+              // Forward authorization header for API requests
+              const auth = proxyReq.getHeader('authorization');
+              if (auth) {
+                proxyReq.setHeader('authorization', auth);
+              }
+            });
+          },
         },
         "/health": {
           target: `http://${backendHost}:${backendPort}`,

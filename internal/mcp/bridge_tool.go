@@ -102,6 +102,14 @@ func (t *BridgeTool) ServerName() string { return t.serverName }
 // OriginalName returns the original MCP tool name (without prefix).
 func (t *BridgeTool) OriginalName() string { return t.toolName }
 
+// Metadata returns the tool's capabilities for policy enforcement.
+func (t *BridgeTool) Metadata() tools.ToolMetadata {
+	return tools.ToolMetadata{
+		Name:         t.registeredName,
+		Capabilities: []tools.ToolCapability{tools.CapMutating, tools.CapMCPBridged},
+	}
+}
+
 // IsConnected returns whether the underlying MCP server connection is healthy.
 func (t *BridgeTool) IsConnected() bool { return t.connected.Load() }
 

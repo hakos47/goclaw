@@ -134,6 +134,8 @@ type SlackConfig struct {
 type WhatsAppConfig struct {
 	Enabled        bool                `json:"enabled"`
 	AuthDir        string              `json:"auth_dir,omitempty"`        // optional: SQLite auth dir override (desktop)
+	OwnerJID       string              `json:"owner_jid,omitempty"`       // privileged WhatsApp JID for reports/unfiltered chat
+	OwnerUserID    string              `json:"owner_user_id,omitempty"`   // UserID associated with the owner (default "system")
 	AllowFrom      FlexibleStringSlice `json:"allow_from"`
 	DMPolicy       string              `json:"dm_policy,omitempty"`       // "pairing" (default for DB instances), "open", "allowlist", "disabled"
 	GroupPolicy    string              `json:"group_policy,omitempty"`    // "pairing" (default for DB instances), "open" (default for config), "allowlist", "disabled"

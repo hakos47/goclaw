@@ -277,7 +277,7 @@ func (s *PGKnowledgeGraphStore) MergeEntities(ctx context.Context, agentID, user
 		return fmt.Errorf("kg merge entities: source: %w", err)
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return err
 	}

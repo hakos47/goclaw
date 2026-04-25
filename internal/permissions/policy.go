@@ -414,6 +414,9 @@ func isReadMethod(method string) bool {
 
 		// Zalo personal contacts listing
 		protocol.MethodZaloPersonalContacts,
+
+		// WhatsApp ID resolution
+		protocol.MethodWhatsAppResolveJID,
 	}
 	return slices.Contains(readMethods, method)
 }

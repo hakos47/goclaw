@@ -12,6 +12,7 @@ package tools
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -22,12 +23,13 @@ import (
 
 // SubagentConfig configures the subagent system.
 type SubagentConfig struct {
-	MaxConcurrent       int    // max concurrent subagents (default 4)
-	MaxSpawnDepth       int    // max nesting depth (default 3)
-	MaxChildrenPerAgent int    // max children per parent (default 8)
-	ArchiveAfterMinutes int    // auto-archive completed tasks (default 30)
-	MaxRetries          int    // max LLM call retries on error (default 2)
-	Model               string // model override for subagents (empty = inherit)
+	MaxConcurrent        int           // max concurrent subagents (default 4)
+	MaxSpawnDepth        int           // max nesting depth (default 3)
+	MaxChildrenPerAgent  int           // max children per parent (default 8)
+	ArchiveAfterMinutes  int           // auto-archive completed tasks (default 30)
+	MaxRetries           int           // max LLM call retries on error (default 2)
+	MaxSubagentTimeout   time.Duration // hard timeout for a single subagent run (default 10m)
+	Model                string        // model override for subagents (empty = inherit)
 }
 
 // Subagent task status constants.
@@ -138,6 +140,11 @@ func (sm *SubagentManager) effectiveConfig(ctx context.Context) SubagentConfig {
 	}
 	if override.MaxRetries > 0 {
 		cfg.MaxRetries = override.MaxRetries
+	}
+	if override.MaxTimeout != "" {
+		if d, err := time.ParseDuration(override.MaxTimeout); err == nil {
+			cfg.MaxSubagentTimeout = d
+		}
 	}
 	if override.Model != "" {
 		cfg.Model = override.Model

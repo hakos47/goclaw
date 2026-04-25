@@ -20,7 +20,7 @@ var builtinToolGroups = map[string][]string{
 	"sessions":   {"sessions_list", "sessions_history", "sessions_send", "spawn", "session_status"},
 	"ui":         {"browser"},
 	"automation": {"cron"},
-	"messaging":  {"message", "create_forum_topic", "list_group_members"},
+	"messaging":  {"message", "create_forum_topic", "list_group_members", "whatsapp_send_message", "whatsapp_list_chats", "whatsapp_list_contacts", "whatsapp_find_contact", "whatsapp_group_create", "whatsapp_group_invite", "whatsapp_group_members", "whatsapp_profile_photo", "whatsapp_get_profile", "whatsapp_get_status", "whatsapp_read_messages", "whatsapp_test_target"},
 	"team":       {"team_tasks"},
 	// Composite group: all goclaw native tools (excludes MCP/custom plugins).
 	"goclaw": {
@@ -32,6 +32,9 @@ var builtinToolGroups = map[string][]string{
 		"delegate",
 		"cron", "datetime", "heartbeat",
 		"message", "create_forum_topic", "list_group_members",
+		"whatsapp_send_message", "whatsapp_list_chats", "whatsapp_list_contacts", "whatsapp_find_contact",
+		"whatsapp_group_create", "whatsapp_group_invite", "whatsapp_group_members", "whatsapp_profile_photo", "whatsapp_get_profile",
+		"whatsapp_get_status", "whatsapp_read_messages", "whatsapp_test_target",
 		"read_image", "read_document", "read_audio", "read_video",
 		"create_image", "create_video", "create_audio",
 		"skill_search", "skill_manage", "publish_skill", "use_skill",
@@ -65,14 +68,20 @@ func LegacyToolAliases() map[string]string {
 	return legacyToolAliases
 }
 
-// Subagent deny lists — tools subagents cannot use.
+// Subagent deny lists — legacy tools subagents cannot use by name.
 var subagentDenyList = []string{
-	"exec", // subagents should not shell out — main agent can still exec
 	"gateway", "agents_list", "whatsapp_login", "session_status",
 	"cron", "memory_search", "memory_get", "sessions_send",
 }
 
-// Leaf subagent deny — additional restrictions at max spawn depth.
+// SubagentDenyCapabilities — capability-based deny for ALL subagents.
+var subagentDenyCapabilities = []ToolCapability{
+	CapHostAccess, // No shell/exec for subagents
+	CapSensitive,  // No admin/cred tools
+	CapMCPBridged, // No external MCP tools for subagents
+}
+
+// Leaf subagent deny — additional restrictions at max depth.
 var leafSubagentDenyList = []string{
 	"sessions_list", "sessions_history", "spawn",
 }
@@ -121,14 +130,20 @@ func (pe *PolicyEngine) FilterTools(
 
 	// Step 8: Capability-based deny (v3 RBAC)
 	pe.mu.RLock()
-	denyCaps := pe.denyCapabilities
+	denyCaps := make([]ToolCapability, len(pe.denyCapabilities))
+	copy(denyCaps, pe.denyCapabilities)
 	capReg := pe.registry
 	pe.mu.RUnlock()
+
+	if isSubagent {
+		denyCaps = append(denyCaps, subagentDenyCapabilities...)
+	}
+
 	if len(denyCaps) > 0 && capReg != nil {
 		allowed = filterByCapability(allowed, denyCaps, capReg)
 	}
 
-	// Apply subagent restrictions
+	// Apply legacy subagent name-based restrictions
 	if isSubagent {
 		allowed = subtractSet(allowed, subagentDenyList)
 	}

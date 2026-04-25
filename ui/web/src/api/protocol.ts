@@ -181,8 +181,13 @@ export const Methods = {
   TENANTS_USERS_ADD: "tenants.users.add",
   TENANTS_USERS_REMOVE: "tenants.users.remove",
 
-  // Phase 3+ - NICE TO HAVE
-  LOGS_TAIL: "logs.tail",
+	// Zalo Personal
+	ZALO_PERSONAL_QR_START: "zalo.personal.qr.start",
+	ZALO_PERSONAL_CONTACTS: "zalo.personal.contacts",
+
+	// WhatsApp
+	WHATSAPP_QR_START: "whatsapp.qr.start",
+	WHATSAPP_ID_RESOLVE: "whatsapp.id.resolve",
 } as const;
 
 // --- Event names (from pkg/protocol/events.go) ---

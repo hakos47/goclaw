@@ -72,7 +72,7 @@ func (s *PGKnowledgeGraphStore) SupersedeEntity(ctx context.Context, old *store.
 	if err != nil {
 		return fmt.Errorf("kg supersede entity: %w", err)
 	}
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return fmt.Errorf("supersede begin tx: %w", err)
 	}

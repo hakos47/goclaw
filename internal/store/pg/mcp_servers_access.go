@@ -256,7 +256,7 @@ func (s *PGMCPServerStore) ReviewRequest(ctx context.Context, requestID uuid.UUI
 		return err
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return err
 	}

@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/nextlevelbuilder/goclaw/internal/audio/elevenlabs"
 	geminiaudio "github.com/nextlevelbuilder/goclaw/internal/audio/gemini"
@@ -192,6 +193,11 @@ func setupSubagents(providerReg *providers.Registry, cfg *config.Config, msgBus 
 		}
 		if sc.MaxRetries > 0 {
 			subCfg.MaxRetries = sc.MaxRetries
+		}
+		if sc.MaxTimeout != "" {
+			if d, err := time.ParseDuration(sc.MaxTimeout); err == nil {
+				subCfg.MaxSubagentTimeout = d
+			}
 		}
 		if sc.Model != "" {
 			subCfg.Model = sc.Model

@@ -502,7 +502,7 @@ func parseAgentIDsFromAny(raw any) ([]uuid.UUID, error) {
 // ─── N:M junction: hook_agents ────────────────────────────────────────
 
 func (s *PGHookStore) SetHookAgents(ctx context.Context, hookID uuid.UUID, agentIDs []uuid.UUID) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTxWithTenant(ctx, s.db)
 	if err != nil {
 		return err
 	}

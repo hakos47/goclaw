@@ -25,9 +25,26 @@ interface SessionSwitcherProps {
 function sessionLabel(session: SessionInfo): string {
   if (session.metadata?.chat_title) return session.metadata.chat_title;
   if (session.metadata?.display_name) return session.metadata.display_name;
+  if (session.metadata?.user_name) return session.metadata.user_name;
   if (session.label) return session.label;
 
   const parts = session.key.split(":");
+  if (parts.length < 3) return session.key;
+
+  const channel = parts[2];
+  if (channel === "whatsapp" && parts.length >= 5) {
+    const jid = parts[4];
+    if (!jid) return session.key;
+    const namePart = jid.split("@")[0] ?? jid;
+    if (jid.endsWith("@s.whatsapp.net")) {
+      return `WA: ${namePart}`;
+    }
+    if (jid.endsWith("@g.us")) {
+      return `WA Group: ${namePart.slice(0, 12)}…`;
+    }
+    return `WhatsApp ${jid.slice(0, 12)}`;
+  }
+
   const scope = parts.length >= 3 ? parts.slice(2).join(":") : session.key;
 
   if (scope.startsWith("ws-")) {

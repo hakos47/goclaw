@@ -137,7 +137,12 @@ func (t *SpawnTool) executeSubagentAsync(ctx context.Context, args map[string]an
 		parentID = t.parentID
 	}
 
-	msg, err := t.subagentMgr.Spawn(ctx, parentID, t.depth, task, label, modelOverride,
+	depth := SubagentDepthFromCtx(ctx)
+	if depth == 0 && t.depth > 0 {
+		depth = t.depth
+	}
+
+	msg, err := t.subagentMgr.Spawn(ctx, parentID, depth, task, label, modelOverride,
 		channel, chatID, peerKind, callback)
 	if err != nil {
 		return ErrorResult(err.Error())
@@ -165,7 +170,12 @@ func (t *SpawnTool) executeSubagentSync(ctx context.Context, args map[string]any
 		parentID = t.parentID
 	}
 
-	result, iterations, err := t.subagentMgr.RunSync(ctx, parentID, t.depth, task, label,
+	depth := SubagentDepthFromCtx(ctx)
+	if depth == 0 && t.depth > 0 {
+		depth = t.depth
+	}
+
+	result, iterations, err := t.subagentMgr.RunSync(ctx, parentID, depth, task, label,
 		channel, chatID)
 	if err != nil {
 		return ErrorResult(fmt.Sprintf("Subagent '%s' failed: %v", label, err))

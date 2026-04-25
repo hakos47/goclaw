@@ -113,6 +113,22 @@ func builtinToolSeedData() []store.BuiltinToolDef {
 		{Name: "whatsapp_profile_photo", DisplayName: "WhatsApp Profile Photo", Description: "Get the profile photo URL for a WhatsApp user or group", Category: "whatsapp", Enabled: true,
 			Requires: []string{"channel:whatsapp"},
 		},
+		{Name: "whatsapp_find_contact", DisplayName: "WhatsApp Find Contact", Description: "Find a WhatsApp contact by name or partial name. Searches GoClaw's contact database first, then falls back to the WhatsApp local contact list. Returns the contact's JID and display name for use with whatsapp_send_message.", Category: "whatsapp", Enabled: true,
+			Requires: []string{"channel:whatsapp"},
+		},
+
+		{Name: "whatsapp_get_profile", DisplayName: "WhatsApp Get Profile", Description: "Get comprehensive profile information for a WhatsApp JID (push name, bio, business info)", Category: "whatsapp", Enabled: true,
+			Requires: []string{"channel:whatsapp"},
+		},
+		{Name: "whatsapp_get_status", DisplayName: "WhatsApp Get Status", Description: "Get the current bio/status text of a WhatsApp user JID.", Category: "whatsapp", Enabled: true,
+			Requires: []string{"channel:whatsapp"},
+		},
+		{Name: "whatsapp_read_messages", DisplayName: "WhatsApp Read Messages", Description: "Read the recent message history of a WhatsApp conversation (direct or group).", Category: "whatsapp", Enabled: true,
+			Requires: []string{"channel:whatsapp"},
+		},
+		{Name: "whatsapp_test_target", DisplayName: "WhatsApp Diagnostic", Description: "Run a complete diagnostic test against a phone number (profile info, photo, and bio).", Category: "whatsapp", Enabled: true,
+			Requires: []string{"channel:whatsapp"},
+		},
 
 		// scheduling
 		{Name: "cron", DisplayName: "Cron Scheduler", Description: "Schedule or manage recurring tasks using cron expressions, at-times, or intervals", Category: "scheduling", Enabled: true,

@@ -16,6 +16,8 @@ import (
 type whatsappInstanceConfig struct {
 	DMPolicy       string   `json:"dm_policy,omitempty"`
 	GroupPolicy    string   `json:"group_policy,omitempty"`
+	OwnerJID       string   `json:"owner_jid,omitempty"`
+	OwnerUserID    string   `json:"owner_user_id,omitempty"`
 	RequireMention *bool    `json:"require_mention,omitempty"`
 	HistoryLimit   int      `json:"history_limit,omitempty"`
 	AllowFrom      []string `json:"allow_from,omitempty"`
@@ -62,6 +64,8 @@ func FactoryWithDBAudio(db *sql.DB, pendingStore store.PendingMessageStore, dial
 		waCfg := config.WhatsAppConfig{
 			Enabled:        true,
 			AllowFrom:      ic.AllowFrom,
+			OwnerJID:       ic.OwnerJID,
+			OwnerUserID:    ic.OwnerUserID,
 			DMPolicy:       ic.DMPolicy,
 			GroupPolicy:    ic.GroupPolicy,
 			RequireMention: ic.RequireMention,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -115,12 +116,19 @@ func (s *PGSessionStore) ListPaged(ctx context.Context, opts store.SessionListOp
 	}
 	offset := max(opts.Offset, 0)
 
+	tx, err := beginTxWithTenant(ctx, s.db)
+	if err != nil {
+		slog.Warn("sessions.list_paged: begin tx failed", "error", err)
+		return store.SessionListResult{Sessions: []store.SessionInfo{}, Total: 0}
+	}
+	defer tx.Rollback()
+
 	where, whereArgs := buildSessionFilter(ctx, opts, "")
 
 	// Count total
 	var total int
 	countQ := "SELECT COUNT(*) FROM sessions" + where
-	if err := s.db.QueryRowContext(ctx, countQ, whereArgs...).Scan(&total); err != nil {
+	if err := tx.QueryRowContext(ctx, countQ, whereArgs...).Scan(&total); err != nil {
 		return store.SessionListResult{Sessions: []store.SessionInfo{}, Total: 0}
 	}
 
@@ -131,7 +139,7 @@ func (s *PGSessionStore) ListPaged(ctx context.Context, opts store.SessionListOp
 	selectArgs := append(append([]any{}, whereArgs...), limit, offset)
 
 	var scanned []sessionPagedRow
-	if err := pkgSqlxDB.SelectContext(ctx, &scanned, selectQ, selectArgs...); err != nil {
+	if err := sqlxTx(tx).SelectContext(ctx, &scanned, selectQ, selectArgs...); err != nil {
 		return store.SessionListResult{Sessions: []store.SessionInfo{}, Total: total}
 	}
 
@@ -139,6 +147,7 @@ func (s *PGSessionStore) ListPaged(ctx context.Context, opts store.SessionListOp
 	for i := range scanned {
 		result = append(result, scanned[i].toSessionInfo())
 	}
+	tx.Commit()
 	return store.SessionListResult{Sessions: result, Total: total}
 }
 
@@ -150,12 +159,19 @@ func (s *PGSessionStore) ListPagedRich(ctx context.Context, opts store.SessionLi
 	}
 	offset := max(opts.Offset, 0)
 
+	tx, err := beginTxWithTenant(ctx, s.db)
+	if err != nil {
+		slog.Warn("sessions.list_paged_rich: begin tx failed", "error", err)
+		return store.SessionListRichResult{Sessions: []store.SessionInfoRich{}, Total: 0}
+	}
+	defer tx.Rollback()
+
 	where, whereArgs := buildSessionFilter(ctx, opts, "s")
 
 	// Count total
 	var total int
 	countQ := "SELECT COUNT(*) FROM sessions s" + where
-	if err := s.db.QueryRowContext(ctx, countQ, whereArgs...).Scan(&total); err != nil {
+	if err := tx.QueryRowContext(ctx, countQ, whereArgs...).Scan(&total); err != nil {
 		return store.SessionListRichResult{Sessions: []store.SessionInfoRich{}, Total: 0}
 	}
 
@@ -175,7 +191,7 @@ func (s *PGSessionStore) ListPagedRich(ctx context.Context, opts store.SessionLi
 	selectArgs := append(append([]any{}, whereArgs...), limit, offset)
 
 	var scanned []sessionRichRow
-	if err := pkgSqlxDB.SelectContext(ctx, &scanned, selectQ, selectArgs...); err != nil {
+	if err := sqlxTx(tx).SelectContext(ctx, &scanned, selectQ, selectArgs...); err != nil {
 		return store.SessionListRichResult{Sessions: []store.SessionInfoRich{}, Total: total}
 	}
 
@@ -183,6 +199,7 @@ func (s *PGSessionStore) ListPagedRich(ctx context.Context, opts store.SessionLi
 	for i := range scanned {
 		result = append(result, scanned[i].toSessionInfoRich())
 	}
+	tx.Commit()
 	return store.SessionListRichResult{Sessions: result, Total: total}
 }
 
@@ -317,6 +334,12 @@ func (s *PGSessionStore) getOrInit(ctx context.Context, key string) *store.Sessi
 }
 
 func (s *PGSessionStore) loadFromDB(ctx context.Context, key string) *store.SessionData {
+	tx, err := beginTxWithTenant(ctx, s.db)
+	if err != nil {
+		return nil
+	}
+	defer tx.Rollback()
+
 	var sessionKey string
 	var msgsJSON []byte
 	var summary, model, provider, channel, label, spawnedBy, userID *string
@@ -328,7 +351,7 @@ func (s *PGSessionStore) loadFromDB(ctx context.Context, key string) *store.Sess
 	var metaJSON *[]byte
 
 	tid := tenantIDForInsert(ctx)
-	err := s.db.QueryRowContext(ctx,
+	err = tx.QueryRowContext(ctx,
 		`SELECT session_key, messages, summary, model, provider, channel,
 		 input_tokens, output_tokens, compaction_count,
 		 memory_flush_compaction_count, memory_flush_at,
@@ -343,6 +366,9 @@ func (s *PGSessionStore) loadFromDB(ctx context.Context, key string) *store.Sess
 	if err != nil {
 		return nil
 	}
+
+	tx.Commit() // Read-only but we commit for completeness and connection release
+
 
 	var msgs []providers.Message
 	json.Unmarshal(msgsJSON, &msgs)
