@@ -89,6 +89,8 @@ type Loop struct {
 	defaultTimezone  string    // system default timezone for bootstrap pre-fill
 	provider         providers.Provider
 	model            string
+	economyProvider  string
+	economyModel     string
 	modelRegistry    providers.ModelRegistry // resolves per-model context window at run time (nil = use static contextWindow)
 	contextWindow    int
 	maxTokens        int // max output tokens per LLM call (0 = default 8192)
@@ -300,6 +302,8 @@ type LoopConfig struct {
 	ID               string
 	Provider         providers.Provider
 	Model            string
+	EconomyProvider  string
+	EconomyModel     string
 	ContextWindow    int
 	MaxTokens        int // max output tokens per LLM call (0 = default 8192)
 	MaxIterations    int
@@ -510,6 +514,8 @@ func NewLoop(cfg LoopConfig) *Loop {
 		agentType:              cfg.AgentType,
 		provider:               cfg.Provider,
 		model:                  cfg.Model,
+		economyProvider:        cfg.EconomyProvider,
+		economyModel:           cfg.EconomyModel,
 		modelRegistry:          cfg.ModelRegistry,
 		contextWindow:          cfg.ContextWindow,
 		maxTokens:              cfg.MaxTokens,

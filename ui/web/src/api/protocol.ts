@@ -78,6 +78,7 @@ export const Methods = {
   SESSIONS_PATCH: "sessions.patch",
   SESSIONS_DELETE: "sessions.delete",
   SESSIONS_RESET: "sessions.reset",
+  SESSIONS_SUMMARY: "sessions.summary",
 
   // Phase 2 - NEEDED
   SKILLS_LIST: "skills.list",
@@ -110,6 +111,8 @@ export const Methods = {
   PAIRING_REVOKE: "device.pair.revoke",
 
   BROWSER_PAIRING_STATUS: "browser.pairing.status",
+
+  LOGS_TAIL: "logs.tail",
 
   APPROVALS_LIST: "exec.approval.list",
   APPROVALS_APPROVE: "exec.approval.approve",

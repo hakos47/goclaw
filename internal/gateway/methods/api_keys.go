@@ -42,7 +42,6 @@ func (m *APIKeysMethods) handleList(ctx context.Context, client *gateway.Client,
 	}
 	keys, err := m.apiKeys.List(ctx, ownerID)
 	if err != nil {
-		slog.Error("api_keys.list failed", "error", err)
 		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInternal, i18n.T(locale, i18n.MsgFailedToList, "API keys")))
 		return
 	}

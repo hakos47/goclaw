@@ -47,7 +47,9 @@ func (l *Loop) Run(ctx context.Context, req RunRequest) (*RunResult, error) {
 		leadNudge := "\n\n## STRATEGIC DIRECTIVE: INBOUND LEAD CONVERSION\n" +
 			"This chat is categorized as an 'Inbound Lead'. Your priority is to detect user needs " +
 			"and proactively propose solutions. Use available skills to generate structured proposals " +
-			"and save them directly to the Knowledge Vault for future follow-up."
+			"and save them directly to the Knowledge Vault for future follow-up.\n\n" +
+			"BROWSER OPTIMIZATION: When using the 'browser' tool to research on the web, ALWAYS prefer " +
+			"'simplified: true' in snapshots to minimize token noise and prioritize relevant interactive content."
 		req.ExtraSystemPrompt += leadNudge
 	}
 

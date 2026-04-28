@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -60,6 +61,8 @@ func (l *Loop) pipelineCallbacks(req *RunRequest, bridgeRS *runState) pipelineCa
 		updateMetadata:     l.makeUpdateMetadata(req),
 		bootstrapCleanup:   l.makeBootstrapCleanup(),
 		maybeSummarize:     l.maybeSummarize,
+		setSessionCategory: l.sessions.SetCategory,
+		setSessionMetadata: l.sessions.SetSessionMetadata,
 	}
 }
 
@@ -86,6 +89,8 @@ type pipelineCallbackSet struct {
 	sanitizeContent    func(string) string
 	flushMessages      func(ctx context.Context, sessionKey string, msgs []providers.Message) error
 	updateMetadata     func(ctx context.Context, sessionKey string, usage providers.Usage) error
+	setSessionCategory func(ctx context.Context, sessionKey, category string)
+	setSessionMetadata func(ctx context.Context, sessionKey string, metadata map[string]string)
 	bootstrapCleanup   func(ctx context.Context, state *pipeline.RunState) error
 	maybeSummarize     func(ctx context.Context, sessionKey string)
 }
@@ -233,6 +238,45 @@ func (l *Loop) makeCallLLM(req *RunRequest, emitRun func(AgentEvent)) func(ctx c
 		provider := state.Provider
 		model := state.Model
 
+		// TASK-019: O(1) Heuristic & Silent Fallback
+		originalModel := l.model
+		if req.ModelOverride != "" {
+			originalModel = req.ModelOverride
+		}
+		
+		triedEconomy := false
+		
+		// If model is already economy (e.g. from lead-gen routing), we will fallback to originalModel on error
+		if model == l.economyModel && model != originalModel {
+			triedEconomy = true
+		} else if l.economyModel != "" && model != l.economyModel {
+			// O(1) heuristic: fast check on user message
+			lastUserMsg := req.Message
+			if lastUserMsg == "" && len(chatReq.Messages) > 0 {
+				// Find last user message in chatReq.Messages
+				for i := len(chatReq.Messages) - 1; i >= 0; i-- {
+					if chatReq.Messages[i].Role == "user" {
+						lastUserMsg = chatReq.Messages[i].Content
+						break
+					}
+				}
+			}
+			
+			isSimple := len(lastUserMsg) > 0 && len(lastUserMsg) < 200 &&
+				!strings.Contains(lastUserMsg, "```") &&
+				!strings.Contains(lastUserMsg, "func ") &&
+				!strings.Contains(lastUserMsg, "def ") &&
+				!strings.Contains(lastUserMsg, "class ") &&
+				!strings.Contains(lastUserMsg, "{")
+				
+			if isSimple {
+				model = l.economyModel
+				triedEconomy = true
+			}
+		}
+
+		chatReq.Model = model
+
 		// Enrich ChatRequest options to match v2 (providers need these for caching, routing, audit).
 		if chatReq.Options == nil {
 			chatReq.Options = make(map[string]any)
@@ -267,8 +311,8 @@ func (l *Loop) makeCallLLM(req *RunRequest, emitRun func(AgentEvent)) func(ctx c
 		// Emit LLM span start for tracing.
 		start := time.Now().UTC()
 		var opts []spanOption
-		if state.Model != "" {
-			opts = append(opts, withModel(state.Model))
+		if model != "" {
+			opts = append(opts, withModel(model))
 		}
 		if provider != nil {
 			opts = append(opts, withProvider(provider.Name()))
@@ -277,27 +321,41 @@ func (l *Loop) makeCallLLM(req *RunRequest, emitRun func(AgentEvent)) func(ctx c
 
 		var resp *providers.ChatResponse
 		var err error
-		if req.Stream {
-			resp, err = provider.ChatStream(ctx, chatReq, func(chunk providers.StreamChunk) {
-				if chunk.Thinking != "" {
-					emitRun(AgentEvent{
-						Type:    protocol.ChatEventThinking,
-						AgentID: l.id,
-						RunID:   req.RunID,
-						Payload: map[string]string{"content": chunk.Thinking},
-					})
-				}
-				if chunk.Content != "" {
-					emitRun(AgentEvent{
-						Type:    protocol.ChatEventChunk,
-						AgentID: l.id,
-						RunID:   req.RunID,
-						Payload: map[string]string{"content": chunk.Content},
-					})
-				}
-			})
-		} else {
-			resp, err = provider.Chat(ctx, chatReq)
+		
+		runChat := func() (*providers.ChatResponse, error) {
+			if req.Stream {
+				return provider.ChatStream(ctx, chatReq, func(chunk providers.StreamChunk) {
+					if chunk.Thinking != "" {
+						emitRun(AgentEvent{
+							Type:    protocol.ChatEventThinking,
+							AgentID: l.id,
+							RunID:   req.RunID,
+							Payload: map[string]string{"content": chunk.Thinking},
+						})
+					}
+					if chunk.Content != "" {
+						emitRun(AgentEvent{
+							Type:    protocol.ChatEventChunk,
+							AgentID: l.id,
+							RunID:   req.RunID,
+							Payload: map[string]string{"content": chunk.Content},
+						})
+					}
+				})
+			}
+			return provider.Chat(ctx, chatReq)
+		}
+
+		resp, err = runChat()
+		
+		// TASK-019: Silent Fallback
+		if err != nil && triedEconomy {
+			slog.Warn("agent.loop: economy model failed, silent fallback to original", "agent", l.id, "err", err, "economy", model, "original", originalModel)
+			chatReq.Model = originalModel
+			model = originalModel
+			
+			// Retry block
+			resp, err = runChat()
 		}
 
 		// Non-streaming: emit content events matching v2 behavior (channels need these).

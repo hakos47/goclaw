@@ -14,6 +14,8 @@ import (
 // Manager handles the Chrome browser lifecycle and page management.
 type Manager struct {
 	mu          sync.Mutex
+	ctx         context.Context    // manager-level context for long-lived resources
+	cancel      context.CancelFunc // cancel for manager-level context
 	browser     *rod.Browser
 	launcher    *launcher.Launcher // retained for PID-based cleanup on crash
 	refs        *RefStore
@@ -75,8 +77,8 @@ func New(opts ...Option) *Manager {
 		pageTenants:   make(map[string]string),
 		pageLastUsed:  make(map[string]time.Time),
 		actionTimeout: 30 * time.Second,
-		idleTimeout:   10 * time.Minute,
-		maxPages:      5,
+		idleTimeout:   30 * time.Minute,
+		maxPages:      10,
 		logger:        slog.Default(),
 	}
 	for _, o := range opts {
@@ -109,6 +111,11 @@ func (m *Manager) Start(ctx context.Context) error {
 		// Connection dead — clean up and reconnect
 		m.logger.Info("browser connection lost, reconnecting")
 		m.cleanupDeadBrowserLocked()
+	}
+
+	// Initialize manager-level context if first start or after stop
+	if m.ctx == nil || m.ctx.Err() != nil {
+		m.ctx, m.cancel = context.WithCancel(context.Background())
 	}
 
 	var controlURL string
@@ -152,10 +159,10 @@ func (m *Manager) Start(ctx context.Context) error {
 		m.logger.Info("Chrome launched", "cdp", controlURL, "headless", m.headless, "pid", l.PID())
 	}
 
-	connectCtx, connectCancel := context.WithTimeout(ctx, 15*time.Second)
+	_, connectCancel := context.WithTimeout(ctx, 15*time.Second)
 	defer connectCancel()
 
-	b := rod.New().Context(connectCtx).ControlURL(controlURL)
+	b := rod.New().Context(m.ctx).ControlURL(controlURL)
 	if err := b.Connect(); err != nil {
 		// If local launch succeeded but connect failed, kill the orphan process
 		if m.launcher != nil {
@@ -184,6 +191,9 @@ func (m *Manager) Stop(ctx context.Context) error {
 	m.mu.Lock()
 	ch := m.stopReaper
 	m.stopReaper = nil
+	if m.cancel != nil {
+		m.cancel()
+	}
 	m.mu.Unlock()
 	if ch != nil {
 		close(ch)

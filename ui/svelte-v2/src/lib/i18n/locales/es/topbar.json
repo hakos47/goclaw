@@ -1,0 +1,35 @@
+{
+  "expandSidebar": "Expandir lateral",
+  "collapseSidebar": "Contraer lateral",
+  "openMenu": "Abrir menú",
+  "systemSettings": "Ajustes del Sistema",
+  "toggleTheme": "Cambiar tema",
+  "logout": "Cerrar Sesión",
+  "logoutConfirm": "¿Seguro que quieres cerrar sesión?",
+  "language": "Idioma",
+  "timezone": "Zona Horaria",
+  "pairingRequests": "Peticiones de enlace",
+  "pendingPairingRequest": "{count} petición de enlace pendiente",
+  "pendingPairingRequests": "{count} peticiones de enlace pendientes",
+  "apiKeys": "Claves API",
+  "documents": "Documentos",
+  "about": {
+    "menuItem": "Acerca de",
+    "title": "Acerca de GoClaw",
+    "version": "Versión",
+    "sourceCode": "Código Fuente",
+    "license": "Licencia",
+    "documentation": "Documentación",
+    "reportBug": "Reportar Error",
+    "upToDate": "Actualizado",
+    "updateAvailable": "Actualización disponible: {version}",
+    "viewRelease": "Ver notas de versión →",
+    "releaseNotes": "Notas de Versión"
+  },
+  "languages": {
+    "en": "English",
+    "vi": "Tiếng Việt",
+    "zh": "中文",
+    "es": "Español"
+  }
+}

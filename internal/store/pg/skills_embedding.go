@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/nextlevelbuilder/goclaw/internal/store"
 )
@@ -113,6 +114,13 @@ func (s *PGSkillStore) BackfillSkillEmbeddings(ctx context.Context) (int, error)
 			continue
 		}
 		updated++
+		
+		// Rate limit mitigation: wait 2s between skills
+		select {
+		case <-ctx.Done():
+			return updated, ctx.Err()
+		case <-time.After(2 * time.Second):
+		}
 	}
 
 	slog.Info("skill embeddings backfill complete", "updated", updated)

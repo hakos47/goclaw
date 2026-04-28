@@ -119,8 +119,9 @@ func (s *PGAPIKeyStore) List(ctx context.Context, ownerID string) ([]store.APIKe
 		argIdx++
 	}
 
-	// Tenant filter: include tenant-scoped keys + system keys (NULL tenant_id)
-	if !store.IsCrossTenant(ctx) {
+	// Tenant filter: include tenant-scoped keys + system keys (NULL tenant_id).
+	// Master-scope callers (system owners or on master tenant) see all keys.
+	if !store.IsMasterScope(ctx) {
 		tid := store.TenantIDFromContext(ctx)
 		if tid != uuid.Nil {
 			conditions = append(conditions, fmt.Sprintf("(tenant_id = $%d OR tenant_id IS NULL)", argIdx))

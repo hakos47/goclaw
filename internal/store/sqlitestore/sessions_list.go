@@ -121,7 +121,7 @@ func (s *SQLiteSessionStore) ListPaged(ctx context.Context, opts store.SessionLi
 	}
 
 	// Use json_array_length (SQLite built-in) instead of jsonb_array_length.
-	selectQ := fmt.Sprintf(`SELECT session_key, json_array_length(messages), created_at, updated_at, label, channel, user_id, COALESCE(metadata, '{}')
+	selectQ := fmt.Sprintf(`SELECT session_key, json_array_length(messages), created_at, updated_at, label, channel, source_channel_id, channel_type, category, user_id, COALESCE(metadata, '{}')
 		FROM sessions%s ORDER BY updated_at DESC LIMIT ? OFFSET ?`, where)
 	selectArgs := append(append([]any{}, whereArgs...), limit, offset)
 
@@ -136,9 +136,10 @@ func (s *SQLiteSessionStore) ListPaged(ctx context.Context, opts store.SessionLi
 		var key string
 		var msgCount int
 		stCreated, stUpdated := scanTimePair()
-		var label, channel, userID *string
+		var label, channel, channelType, category, userID *string
+		var sourceChannelID *uuid.UUID
 		var metaJSON []byte
-		if err := rows.Scan(&key, &msgCount, stCreated, stUpdated, &label, &channel, &userID, &metaJSON); err != nil {
+		if err := rows.Scan(&key, &msgCount, stCreated, stUpdated, &label, &channel, &sourceChannelID, &channelType, &category, &userID, &metaJSON); err != nil {
 			continue
 		}
 		var meta map[string]string
@@ -146,14 +147,17 @@ func (s *SQLiteSessionStore) ListPaged(ctx context.Context, opts store.SessionLi
 			json.Unmarshal(metaJSON, &meta)
 		}
 		result = append(result, store.SessionInfo{
-			Key:          key,
-			MessageCount: msgCount,
-			Created:      stCreated.Time,
-			Updated:      stUpdated.Time,
-			Label:        derefStr(label),
-			Channel:      derefStr(channel),
-			UserID:       derefStr(userID),
-			Metadata:     meta,
+			Key:             key,
+			MessageCount:    msgCount,
+			Created:         stCreated.Time,
+			Updated:         stUpdated.Time,
+			Label:           derefStr(label),
+			Channel:         derefStr(channel),
+			SourceChannelID: sourceChannelID,
+			ChannelType:     derefStr(channelType),
+			Category:        derefStr(category),
+			UserID:          derefStr(userID),
+			Metadata:        meta,
 		})
 	}
 	if result == nil {
@@ -243,4 +247,6 @@ func (s *SQLiteSessionStore) ListPagedRich(ctx context.Context, opts store.Sessi
 		result = []store.SessionInfoRich{}
 	}
 	return store.SessionListRichResult{Sessions: result, Total: total}
+}
+total}
 }

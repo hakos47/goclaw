@@ -1,11 +1,13 @@
 package agent
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/nextlevelbuilder/goclaw/internal/config"
 	"github.com/nextlevelbuilder/goclaw/internal/providers"
+	"github.com/nextlevelbuilder/goclaw/internal/tools"
 )
 
 func TestLimitHistoryTurns_NoLimit(t *testing.T) {
@@ -622,7 +624,7 @@ func TestPruneContextMessagesDefaultEnabled(t *testing.T) {
 	// With cache-ttl mode and small context window (to trigger soft trim ratio > 0.3),
 	// pruning should trim the large tool result.
 	cfg := &config.ContextPruningConfig{Mode: "cache-ttl"}
-	result := pruneContextMessages(msgs, 5000, cfg, nil, "", nil)
+	result := pruneContextMessages(msgs, 5000, "", cfg, nil, "", nil)
 
 	// The large tool result should have been trimmed.
 	toolMsg := result[2]
@@ -636,7 +638,7 @@ func TestPruneContextMessagesExplicitOff(t *testing.T) {
 		{Role: "user", Content: "Hello"},
 	}
 	cfg := &config.ContextPruningConfig{Mode: "off"}
-	result := pruneContextMessages(msgs, 200000, cfg, nil, "", nil)
+	result := pruneContextMessages(msgs, 200000, "", cfg, nil, "", nil)
 	// Should return original messages unchanged.
 	if len(result) != len(msgs) {
 		t.Errorf("expected %d messages, got %d", len(msgs), len(result))
@@ -669,5 +671,90 @@ func TestTruncateStr(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+type dummyProvider struct{}
+
+func (d dummyProvider) Chat(ctx context.Context, req providers.ChatRequest) (*providers.ChatResponse, error) {
+	return nil, nil
+}
+
+func (d dummyProvider) ChatStream(ctx context.Context, req providers.ChatRequest, onChunk func(providers.StreamChunk)) (*providers.ChatResponse, error) {
+	return nil, nil
+}
+
+func (d dummyProvider) DefaultModel() string {
+	return "dummy-model"
+}
+
+func (d dummyProvider) Name() string {
+	return "dummy-provider"
+}
+
+func TestBuildMessagesLimit_WhatsApp(t *testing.T) {
+	loop := &Loop{
+		tools:    tools.NewRegistry(),
+		provider: dummyProvider{},
+	}
+	history := make([]providers.Message, 60)
+	for i := 0; i < 60; i++ {
+		if i%2 == 0 {
+			history[i] = providers.Message{Role: "user", Content: "u"}
+		} else {
+			history[i] = providers.Message{Role: "assistant", Content: "a"}
+		}
+	}
+	msgs, _ := loop.buildMessages(context.Background(), history, "", "", "", "", "", "whatsapp", "", "", "direct", "", 0, nil, true)
+	if len(msgs) != 32 {
+		// 1 system + 30 history + 1 user message (current)
+		t.Errorf("expected 32 messages (1 system + 30 history + 1 current), got %d", len(msgs))
+	}
+}
+
+func TestBuildMessagesLimit_WS(t *testing.T) {
+	loop := &Loop{
+		tools:    tools.NewRegistry(),
+		provider: dummyProvider{},
+	}
+	history := make([]providers.Message, 120)
+	for i := 0; i < 120; i++ {
+		if i%2 == 0 {
+			history[i] = providers.Message{Role: "user", Content: "u"}
+		} else {
+			history[i] = providers.Message{Role: "assistant", Content: "a"}
+		}
+	}
+	msgs, _ := loop.buildMessages(context.Background(), history, "", "", "", "", "", "ws", "", "", "direct", "", 0, nil, true)
+	if len(msgs) != 102 {
+		// 1 system + 100 history + 1 user message (current)
+		t.Errorf("expected 102 messages (1 system + 100 history + 1 current), got %d", len(msgs))
+	}
+}
+
+func TestBuildMessagesLimit_Default(t *testing.T) {
+	loop := &Loop{
+		tools:    tools.NewRegistry(),
+		provider: dummyProvider{},
+	}
+	history := make([]providers.Message, 80)
+	for i := 0; i < 80; i++ {
+		if i%2 == 0 {
+			history[i] = providers.Message{Role: "user", Content: "u"}
+		} else {
+			history[i] = providers.Message{Role: "assistant", Content: "a"}
+		}
+	}
+	
+	// Test explicit limit overrides default 30
+	msgs1, _ := loop.buildMessages(context.Background(), history, "", "", "", "", "", "api", "", "", "direct", "", 10, nil, true)
+	if len(msgs1) != 22 {
+		t.Errorf("expected 22 messages (1 system + 20 history + 1 current), got %d", len(msgs1))
+	}
+	
+	// Test default 30 turns applies if limit <= 0
+	msgs2, _ := loop.buildMessages(context.Background(), history, "", "", "", "", "", "api", "", "", "direct", "", 0, nil, true)
+	if len(msgs2) != 62 {
+		t.Errorf("expected 62 messages (1 system + 60 history + 1 current), got %d", len(msgs2))
 	}
 }

@@ -54,3 +54,15 @@ builtins:
     # their tenant's content. Existing rows in the DB keep their user-set
     # toggle; this only affects fresh installs / new event-row inserts.
     default_disabled: true
+
+  - id: session-classifier
+    version: 1
+    events: [session_start, user_prompt_submit]
+    scope: global
+    timeout_ms: 500
+    # Higher priority than pii-redactor to classify before redaction.
+    priority: 950
+    source_file: session-classifier.js
+    description: "Automatically categorizes sessions (Inbound, Support, Ops) based on channel and user intent."
+    # Enabled by default for all new sessions.
+    default_disabled: false

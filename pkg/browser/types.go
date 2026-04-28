@@ -39,6 +39,7 @@ type SnapshotOptions struct {
 	Interactive bool // only include interactive elements
 	MaxDepth    int  // 0 = unlimited
 	Compact     bool // remove unnamed structural elements
+	Simplified  bool // lead-gen optimization: filter for key intent content
 	MaxChars    int  // truncate output (default 8000)
 	Limit       int  // max AX nodes to process (default 500)
 }

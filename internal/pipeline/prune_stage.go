@@ -74,6 +74,11 @@ func (s *PruneStage) Execute(ctx context.Context, state *RunState) error {
 	tokensBefore := historyTokens
 
 	softThreshold := budget * 70 / 100
+	// Lead-gen channels (WhatsApp/Facebook) use more aggressive soft pruning (TASK-017)
+	if state.Input.ChannelType == "whatsapp" || state.Input.ChannelType == "facebook" {
+		softThreshold = budget * 50 / 100
+	}
+
 	if historyTokens <= softThreshold {
 		return nil // under budget, no action needed
 	}

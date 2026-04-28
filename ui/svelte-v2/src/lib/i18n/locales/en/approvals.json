@@ -1,0 +1,33 @@
+{
+  "title": "Execution Approvals",
+  "description": "Review and manage agent requests for command execution.",
+  "pending": "{{count}} Pending",
+  "emptyTitle": "No Pending Approvals",
+  "emptyDescription": "All execution requests have been resolved or none have been submitted.",
+  "allowOnce": "Allow Once",
+  "allowAlways": "Allow Always",
+  "deny": "Deny",
+  "confirmAllowOnce": {
+    "title": "Allow Execution",
+    "description": "Are you sure you want to allow {{agentId}} to execute this command once?\n\n<pre class=\"mt-2 rounded bg-black/50 p-2 font-mono text-xs text-white/70\">{{command}}</pre>"
+  },
+  "confirmAllowAlways": {
+    "title": "Allow Always",
+    "description": "Are you sure you want to ALWAYS allow this exact command?\n\n<pre class=\"mt-2 rounded bg-black/50 p-2 font-mono text-xs text-white/70\">{{command}}</pre>\n\nThis will be added to the allowlist in system configuration."
+  },
+  "confirmDeny": {
+    "title": "Deny Execution",
+    "description": "Are you sure you want to deny {{agentId}} from executing this command?\n\n<pre class=\"mt-2 rounded bg-black/50 p-2 font-mono text-xs text-white/70\">{{command}}</pre>",
+    "confirmLabel": "Deny Command"
+  },
+  "toast": {
+    "approved": "Command Approved",
+    "approvedOnce": "The command was approved for a single execution.",
+    "approvedAlways": "The command was approved and added to the global allowlist.",
+    "approveFailed": "Failed to approve command",
+    "denied": "Command Denied",
+    "deniedDesc": "The agent was blocked from executing the command.",
+    "denyFailed": "Failed to deny command",
+    "unknownError": "An unknown error occurred"
+  }
+}

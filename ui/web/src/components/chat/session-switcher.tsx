@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { MessageSquare, Trash2, Phone, Globe, User } from "lucide-react";
+import { MessageSquare, Trash2, Phone, Globe } from "lucide-react";
 import { formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {

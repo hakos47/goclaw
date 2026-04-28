@@ -163,6 +163,8 @@ func (c *Config) applyEnvOverrides() {
 	}
 	envFallback("GOCLAW_PROVIDER", &c.Agents.Defaults.Provider)
 	envFallback("GOCLAW_MODEL", &c.Agents.Defaults.Model)
+	envFallback("GOCLAW_ECONOMY_PROVIDER", &c.Agents.Defaults.EconomyProvider)
+	envFallback("GOCLAW_ECONOMY_MODEL", &c.Agents.Defaults.EconomyModel)
 
 	// Data directory, workspace & sessions
 	envStr("GOCLAW_DATA_DIR", &c.DataDir)
@@ -342,8 +344,13 @@ func (c *Config) ResolveAgent(agentID string) AgentDefaults {
 		if spec.Model != "" {
 			d.Model = spec.Model
 		}
-		if spec.MaxTokens > 0 {
-			d.MaxTokens = spec.MaxTokens
+		if spec.EconomyProvider != "" {
+			d.EconomyProvider = spec.EconomyProvider
+		}
+		if spec.EconomyModel != "" {
+			d.EconomyModel = spec.EconomyModel
+		}
+		if spec.MaxTokens > 0 {			d.MaxTokens = spec.MaxTokens
 		}
 		if spec.Temperature > 0 {
 			d.Temperature = spec.Temperature

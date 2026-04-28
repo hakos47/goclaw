@@ -340,7 +340,20 @@ func (l *Loop) buildMessages(ctx context.Context, history []providers.Message, s
 
 	// History pipeline: limitHistoryTurns → sanitizeHistory.
 	// Pruning is owned by PruneStage in the pipeline (single entry point).
-	trimmed := limitHistoryTurns(history, historyLimit)
+
+	effectiveLimit := historyLimit
+	switch channelType {
+	case "whatsapp", "telegram":
+		effectiveLimit = 15
+	case "ws", "webui":
+		effectiveLimit = 50
+	default:
+		if effectiveLimit <= 0 {
+			effectiveLimit = 30
+		}
+	}
+
+	trimmed := limitHistoryTurns(history, effectiveLimit)
 	sanitized, droppedCount := sanitizeHistory(trimmed)
 	messages = append(messages, sanitized...)
 

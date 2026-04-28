@@ -16,6 +16,12 @@ type ScriptResult struct {
 	// UpdatedInput is a proposed replacement for Event.ToolInput. Dispatcher
 	// applies only when cfg.Source == "builtin" (source-tier capability).
 	UpdatedInput map[string]any
+
+	// UpdatedCategory is a proposed replacement for the session's category.
+	UpdatedCategory string
+	// UpdatedMetadata is a proposed set of metadata fields to merge.
+	UpdatedMetadata map[string]string
+
 	// Stdout is the captured console.log / console.error output, bounded by
 	// handlers.MaxStdoutBytes (truncated with a marker when exceeded).
 	Stdout string

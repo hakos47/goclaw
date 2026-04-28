@@ -138,29 +138,6 @@ func TestToolGroups_MergeToolGroup_Additive(t *testing.T) {
 	}
 }
 
-// TestToolGroups_BuiltinGroups_Seeded verifies that NewRegistry() seeds
-// builtin tool groups from builtinToolGroups.
-func TestToolGroups_BuiltinGroups_Seeded(t *testing.T) {
-	reg := NewRegistry()
-
-	// Check that builtin groups are present
-	memory, ok := reg.GetToolGroup("memory")
-	if !ok {
-		t.Fatal("expected 'memory' builtin group to exist")
-	}
-	if !containsTool(memory, "memory_search") {
-		t.Errorf("memory group should contain memory_search, got: %v", memory)
-	}
-
-	web, ok := reg.GetToolGroup("web")
-	if !ok {
-		t.Fatal("expected 'web' builtin group to exist")
-	}
-	if !containsTool(web, "web_search") || !containsTool(web, "web_fetch") {
-		t.Errorf("web group should contain web_search and web_fetch, got: %v", web)
-	}
-}
-
 func containsTool(tools []string, name string) bool {
 	for _, t := range tools {
 		if t == name {

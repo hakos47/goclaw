@@ -145,9 +145,9 @@ func (s *PGSessionStore) GetOrCreate(ctx context.Context, key string) *store.Ses
 
 	msgsJSON, _ := json.Marshal([]providers.Message{})
 	s.db.ExecContext(ctx,
-		`INSERT INTO sessions (id, session_key, messages, created_at, updated_at, team_id, tenant_id)
+		`INSERT INTO sessions (id, session_key, messages, created_at, updated_at, tenant_id, category)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (tenant_id, session_key) DO NOTHING`,
-		uuid.Must(uuid.NewV7()), key, msgsJSON, now, now, teamID, tenantIDForInsert(ctx),
+		uuid.Must(uuid.NewV7()), key, msgsJSON, now, now, tenantIDForInsert(ctx), "",
 	)
 
 	return data
@@ -305,6 +305,23 @@ func (s *PGSessionStore) UpdateMetadata(ctx context.Context, key, model, provide
 		}
 		if channel != "" {
 			data.Channel = channel
+			// Initial categorization based on channel name if category is unset
+			if data.Category == "" || data.Category == "personal" {
+				switch {
+				case strings.Contains(channel, "whatsapp") || strings.Contains(channel, "facebook"):
+					data.Category = "inbound"
+				case strings.Contains(channel, "telegram") || strings.Contains(channel, "discord"):
+					data.Category = "support"
+				}
+			}
 		}
+	}
+}
+
+func (s *PGSessionStore) SetCategory(ctx context.Context, key, category string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if data, ok := s.cache[sessionCacheKey(ctx, key)]; ok {
+		data.Category = category
 	}
 }

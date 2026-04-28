@@ -234,6 +234,14 @@ func (s *SQLiteSessionStore) UpdateMetadata(ctx context.Context, key, model, pro
 	}
 }
 
+func (s *SQLiteSessionStore) SetCategory(ctx context.Context, key, category string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if data, ok := s.cache[sessionCacheKey(ctx, key)]; ok {
+		data.Category = category
+	}
+}
+
 // --- helpers ---
 
 func (s *SQLiteSessionStore) getOrInit(ctx context.Context, key string) *store.SessionData {
@@ -258,9 +266,9 @@ func (s *SQLiteSessionStore) getOrInit(ctx context.Context, key string) *store.S
 
 	msgsJSON, _ := json.Marshal([]providers.Message{})
 	s.db.ExecContext(ctx,
-		`INSERT INTO sessions (id, session_key, messages, created_at, updated_at, tenant_id)
-		 VALUES (?,?,?,?,?,?) ON CONFLICT (tenant_id, session_key) DO NOTHING`,
-		uuid.Must(uuid.NewV7()), key, msgsJSON, now, now, tenantIDForInsert(ctx),
+		`INSERT INTO sessions (id, session_key, messages, created_at, updated_at, tenant_id, category)
+		 VALUES (?,?,?,?,?,?,?) ON CONFLICT (tenant_id, session_key) DO NOTHING`,
+		uuid.Must(uuid.NewV7()), key, msgsJSON, now, now, tenantIDForInsert(ctx), "",
 	)
 	return data
 }
@@ -310,6 +318,9 @@ func (s *SQLiteSessionStore) loadFromDB(ctx context.Context, key string) *store.
 		AgentUUID:                  derefUUID(agentID),
 		UserID:                     derefStr(userID),
 		TeamID:                     teamID,
+		SourceChannelID:            sourceChannelID,
+		ChannelType:                derefStr(channelType),
+		Category:                   derefStr(channelCategory),
 		Model:                      derefStr(model),
 		Provider:                   derefStr(provider),
 		Channel:                    derefStr(channel),
@@ -317,6 +328,21 @@ func (s *SQLiteSessionStore) loadFromDB(ctx context.Context, key string) *store.
 		OutputTokens:               outputTokens,
 		CompactionCount:            compactionCount,
 		MemoryFlushCompactionCount: memoryFlushCompactionCount,
+		MemoryFlushAt:              memoryFlushAt,
+		Label:                      derefStr(label),
+		SpawnedBy:                  derefStr(spawnedBy),
+		SpawnDepth:                 spawnDepth,
+		Metadata:                   meta,
+	}
+}
+
+func nilSessionUUID(u uuid.UUID) *uuid.UUID {
+	if u == uuid.Nil {
+		return nil
+	}
+	return &u
+}
+oryFlushCompactionCount: memoryFlushCompactionCount,
 		MemoryFlushAt:              memoryFlushAt,
 		Label:                      derefStr(label),
 		SpawnedBy:                  derefStr(spawnedBy),

@@ -81,7 +81,7 @@ func contactWhereSQLite(ctx context.Context, opts store.ContactListOpts) (string
 	}
 	if opts.Search != "" {
 		escaped := strings.NewReplacer("%", "\\%", "_", "\\_").Replace(opts.Search)
-		pattern := escaped + "%"
+		pattern := "%" + escaped + "%"
 		conditions = append(conditions, "(display_name LIKE ? ESCAPE '\\' OR username LIKE ? ESCAPE '\\' OR sender_id LIKE ? ESCAPE '\\')")
 		args = append(args, pattern, pattern, pattern)
 	}
@@ -238,12 +238,14 @@ func (s *SQLiteContactStore) MergeContacts(ctx context.Context, contactIDs []uui
 	tid := store.TenantIDFromContext(ctx)
 
 	placeholders := make([]string, len(contactIDs))
-	args := make([]any, len(contactIDs))
+	args := make([]any, 0, len(contactIDs)+2)
+	args = append(args, tenantUserID)
 	for i, id := range contactIDs {
 		placeholders[i] = "?"
-		args[i] = id
+		args = append(args, id)
 	}
-	args = append(args, tenantUserID, tid)
+	args = append(args, tid)
+
 	q := fmt.Sprintf(
 		"UPDATE channel_contacts SET merged_id = ? WHERE id IN (%s) AND tenant_id = ?",
 		strings.Join(placeholders, ","),

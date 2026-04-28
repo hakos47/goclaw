@@ -1,0 +1,34 @@
+# 🔐 NIX-0 PROTOCOL: STACK LOCK-IN (GoClaw Gateway)
+
+## 🏗️ 1. NIX-0 CORE (THE GATEWAY)
+**Misión:** Zero Dependencies (Single Binary), Altísima Concurrencia, Memory-Safe.
+*   **Backend / Orquestador:** Golang 1.23+
+    *   *Rationale:* Compilación a binario estático, rendimiento verde (Green AI), concurrencia extrema con Goroutines, footprint de memoria mínimo (<50MB).
+*   **Frontend / Dashboard (Embebido):** Svelte 5 + TypeScript + Tailwind CSS
+    *   *Rationale:* Alta reactividad sin Virtual DOM pesado, empaquetado en un solo binario de Go con `embed`.
+*   **Comunicaciones / Messaging:** WebSockets (Nativos Go)
+    *   *Rationale:* Latencia submilisegundo para A2A (Agent-to-Agent) y H2A (Human-to-Agent).
+
+## 🗄️ 2. PERSISTENCE & KNOWLEDGE (THE VAULT)
+*   **Base de Datos Principal:** PostgreSQL 17+ (Imagen Docker: `pgvector/pgvector:pg18`)
+    *   *Rationale:* Estándar industrial (AAA) robusto para persistencia relacional.
+*   **Almacenamiento Vectorial:** `pgvector`
+    *   *Rationale:* Embebido en Postgres para reducir dependencias. Soporte nativo para Búsqueda Semántica de memoria a largo plazo.
+*   **Seguridad y Aislamiento:** PostgreSQL Row-Level Security (RLS)
+    *   *Rationale:* Aislamiento de tenants a nivel de motor SQL sin degradar el rendimiento del ORM/Application Layer.
+
+## 🔌 3. EXTERNAL CONNECTIVITY (CHANNELS)
+*   **Mensajería B2C / B2B:** WhatsApp (Librería: `whatsmeow`)
+    *   *Rationale:* Conexión persistente, multi-dispositivo y sin dependencia crítica de navegadores headless ni APIs bloqueantes externas, ideal para despliegues autónomos.
+*   **Integración Web/App:** API REST + WebSockets expuestos nativamente.
+
+## 🛠️ 4. DEVELOPMENT & DEPLOYMENT (INFRASTRUCTURE)
+*   **Entorno de Desarrollo Local:** Docker Compose
+    *   *Rationale:* `make up` o `docker compose up` gestiona toda la orquestación (GoClaw compilado + DB) sin instalar servicios en el host.
+*   **Construcción Nivel Industrial (Target):**
+    *   *Binario de Go:* Distribución directa o en imagen base Alpine/Scratch.
+    *   *Docker Multi-Stage:* Imagen mínima para producción sin herramientas de build (`golang` compiler).
+
+---
+*Firma Criptográfica:* NIX-ORCHESTRATOR [gemini-3.1-pro-preview]
+*Estado:* APPROVED & LOCKED

@@ -110,6 +110,14 @@ func (m *mockSessionStore) SetLabel(_ context.Context, key, label string) {
 	}
 }
 
+func (m *mockSessionStore) SetCategory(_ context.Context, key, category string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if d, ok := m.sessions[key]; ok {
+		d.Category = category
+	}
+}
+
 func (m *mockSessionStore) SetAgentInfo(context.Context, string, uuid.UUID, string) {}
 func (m *mockSessionStore) TruncateHistory(context.Context, string, int)            {}
 func (m *mockSessionStore) SetHistory(context.Context, string, []providers.Message) {}

@@ -4,7 +4,7 @@ export function SplashScreen({ ready }: { ready: boolean }) {
     <div className="h-dvh flex flex-col items-center justify-center canvas-bg select-none animate-fade-in">
       {/* Logo with gentle pulse */}
       <img
-        src="/goclaw-icon.svg"
+        src="/goclaw-nix.png"
         alt="GoClaw"
         className="h-20 w-20 mb-6 animate-pulse"
         style={{ animationDuration: '2s' }}

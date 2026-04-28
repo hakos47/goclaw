@@ -1,0 +1,21 @@
+{
+  "ticket": "MIG-003_sessions_view",
+  "status": "DONE",
+  "checkpoints": {
+    "CP-1": "Endpoints & WebSocket state configured natively using useWsCall('sessions.list')",
+    "CP-2": "ContextUsageBar migrated with Dark Industrial Glass gradients and responsive constraints",
+    "CP-3": "Table structure converted to liquid widths, avoiding max-w-7xl on route '/sessions'",
+    "CP-4": "Svelte 5 UI compiled without TS errors. Reused global search & shared badges."
+  },
+  "files_modified": [
+    "ui/svelte-v2/src/App.svelte",
+    "ui/svelte-v2/src/pages/Sessions.svelte",
+    "ui/svelte-v2/src/pages/sessions/components/ContextUsageBar.svelte",
+    "ui/svelte-v2/src/pages/sessions/components/SessionRow.svelte",
+    "ui/svelte-v2/src/lib/components/shared/SearchInput.svelte",
+    "ui/svelte-v2/src/lib/components/shared/EmptyState.svelte",
+    "ui/svelte-v2/src/lib/components/shared/TableSkeleton.svelte",
+    "ui/svelte-v2/src/lib/components/shared/Pagination.svelte"
+  ],
+  "build_status": "SUCCESS"
+}

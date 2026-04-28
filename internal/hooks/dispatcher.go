@@ -191,14 +191,14 @@ func (d *stdDispatcher) runSync(ctx context.Context, ev Event, chain []HookConfi
 	chainCtx, cancel := context.WithTimeout(ctx, d.chainBudget)
 	defer cancel()
 
+	result := FireResult{Decision: DecisionAllow}
 	evMut := ev
 	if ev.ToolInput != nil {
 		evMut.ToolInput = cloneMap(ev.ToolInput)
 	}
 	mutated := false
 
-	for _, cfg := range chain {
-		if !cfg.Enabled {
+	for _, cfg := range chain {		if !cfg.Enabled {
 			continue
 		}
 		if d.cb.isTripped(cfg.ID, d.now()) {
@@ -222,21 +222,30 @@ func (d *stdDispatcher) runSync(ctx context.Context, ev Event, chain []HookConfi
 		}
 		d.writeExec(ctx, cfg, evMut, dec, duration, errMsg)
 
-		// Apply mutation to the local copy only when the hook is builtin-source.
-		// Non-builtin scripts get their updatedInput stripped + warned.
-		if cfg.HandlerType == HandlerScript && dec == DecisionAllow && scriptRes.UpdatedInput != nil {
-			if cfg.Source == SourceBuiltin {
-				applyBuiltinMutation(&evMut, scriptRes.UpdatedInput, builtinAllowlistFor(cfg.ID))
-				mutated = true
-			} else {
-				slog.Warn("hooks.script_mutation_denied",
-					"hook_id", cfg.ID,
-					"source", cfg.Source,
-					"field_count", len(scriptRes.UpdatedInput),
-				)
-			}
+		if cfg.HandlerType == HandlerScript && dec == DecisionAllow && (scriptRes.UpdatedInput != nil || scriptRes.UpdatedCategory != "" || scriptRes.UpdatedMetadata != nil) {
+		        if cfg.Source == SourceBuiltin {
+		                if scriptRes.UpdatedInput != nil {
+		                        applyBuiltinMutation(&evMut, scriptRes.UpdatedInput, builtinAllowlistFor(cfg.ID))
+		                        mutated = true
+		                }
+		                if scriptRes.UpdatedCategory != "" {
+		                        result.UpdatedCategory = scriptRes.UpdatedCategory
+		                }
+		                if scriptRes.UpdatedMetadata != nil {
+		                        if result.UpdatedMetadata == nil {
+		                                result.UpdatedMetadata = make(map[string]string)
+		                        }
+		                        for k, v := range scriptRes.UpdatedMetadata {
+		                                result.UpdatedMetadata[k] = v
+		                        }
+		                }
+		        } else {
+		                slog.Warn("hooks.script_mutation_denied",
+		                        "hook_id", cfg.ID,
+		                        "source", cfg.Source,
+		                )
+		        }
 		}
-
 		switch dec {
 		case DecisionBlock:
 			d.cb.record(ctx, cfg.ID, d.now(), d.store)
@@ -258,7 +267,6 @@ func (d *stdDispatcher) runSync(ctx context.Context, ev Event, chain []HookConfi
 		}
 	}
 
-	result := FireResult{Decision: DecisionAllow}
 	if mutated {
 		if evMut.ToolInput != nil {
 			result.UpdatedToolInput = evMut.ToolInput
@@ -269,9 +277,7 @@ func (d *stdDispatcher) runSync(ctx context.Context, ev Event, chain []HookConfi
 		}
 	}
 	return result, nil
-}
-
-// cloneMap returns a shallow copy of m. Used so runSync's mutations on the
+	}// cloneMap returns a shallow copy of m. Used so runSync's mutations on the
 // local evMut don't leak back to the caller's event when a downstream hook
 // blocks or the chain aborts.
 func cloneMap(m map[string]any) map[string]any {

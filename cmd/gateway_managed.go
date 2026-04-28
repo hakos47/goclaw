@@ -58,7 +58,7 @@ func wireExtras(
 	sandboxMgr sandbox.Manager,
 	redisClient any, // nil when built without -tags redis or when Redis is unconfigured
 	domainBus eventbus.DomainEventBus,
-) (*tools.ContextFileInterceptor, *mcpbridge.Pool, *media.Store, tools.PostTurnProcessor) {
+) (*tools.ContextFileInterceptor, *mcpbridge.Pool, *media.Store, tools.PostTurnProcessor, hooks.Dispatcher) {
 	// 1. Build cache instances (in-memory or Redis depending on build tags)
 	agentCtxCache, userCtxCache := makeCaches(redisClient)
 
@@ -689,7 +689,7 @@ func wireExtras(
 	})
 
 	slog.Info("resolver + interceptors + cache subscribers wired")
-	return contextFileInterceptor, mcpPool, mediaStore, postTurn
+	return contextFileInterceptor, mcpPool, mediaStore, postTurn, hookDispatcher
 }
 
 // kgSettings holds KG extraction settings from the builtin_tools table.

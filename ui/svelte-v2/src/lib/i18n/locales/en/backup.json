@@ -1,0 +1,71 @@
+{
+  "title": "Backup & Restore",
+  "description": "Manage system snapshots, automated backups, and multitenancy data isolation.",
+  "tabs": {
+    "systemBackup": "System Backup",
+    "systemRestore": "System Restore",
+    "s3Config": "S3 Automated Config",
+    "tenantBackup": "Tenant Snapshots"
+  },
+  "systemBackup": {
+    "title": "System Snapshot",
+    "description": "Generate a full system backup including the core database and all persistent storage files.",
+    "start": "Generate Backup",
+    "startToS3": "Backup to S3 Directly",
+    "generating": "Generating Snapshot...",
+    "downloadReady": "Snapshot Ready for Download",
+    "downloadSize": "Size: {{size}} MB",
+    "downloadBtn": "Download Archive",
+    "uploadS3Btn": "Push to S3 Configured Bucket",
+    "uploading": "Pushing to S3..."
+  },
+  "preflight": {
+    "title": "System Diagnostics",
+    "refresh": "Refresh",
+    "pgDump": "PG Dump Available",
+    "diskSpace": "Disk Space Sufficient",
+    "dbSize": "Database Size",
+    "dataDir": "Storage Size",
+    "workspace": "Workspace Size",
+    "freeDisk": "Free Disk",
+    "warnings": "Warnings",
+    "critical": "CRITICAL CHECKS FAILED. BACKUPS MAY CORRUPT OR FAIL.",
+    "pgDumpMissing": "Missing pg_dump binary",
+    "goToPackages": "Install from Packages Module"
+  },
+  "systemRestore": {
+    "title": "System Restoration",
+    "description": "Restore the system from an existing .tar.gz snapshot.",
+    "warning": "WARNING: Restoring will overwrite the current database and file storage. The system will automatically reboot after restoration.",
+    "dryRun": "Dry Run (Validate Only)",
+    "skipDb": "Skip Database Extraction",
+    "skipFiles": "Skip File Extraction",
+    "selectFile": "Select Archive (.tar.gz)",
+    "startRestore": "Initiate Restoration",
+    "restoring": "Restoration in Progress...",
+    "confirmTitle": "Critical Operation",
+    "confirmDesc": "You are about to restore the system state. This operation is IRREVERSIBLE. Are you absolutely sure?"
+  },
+  "s3Config": {
+    "title": "S3 Remote Storage",
+    "description": "Configure an S3-compatible backend (AWS, Cloudflare R2, MinIO) for automated and manual remote backups.",
+    "save": "Save Configuration",
+    "saving": "Saving...",
+    "endpoint": "Endpoint URL",
+    "region": "Region",
+    "bucket": "Bucket Name",
+    "accessKey": "Access Key ID",
+    "secretKey": "Secret Access Key",
+    "forcePathStyle": "Force Path Style"
+  },
+  "tenantBackup": {
+    "title": "Tenant Data Operations",
+    "description": "Administrators can backup or restore isolated environments without affecting global settings.",
+    "tenantSelect": "Select Target Tenant",
+    "backupSection": "Export Tenant",
+    "restoreSection": "Import Tenant",
+    "startBackup": "Export Selected Tenant",
+    "startRestore": "Import over Selected Tenant",
+    "confirmRestore": "You are about to overwrite this tenant's entire isolated database and filesystem. Proceed?"
+  }
+}

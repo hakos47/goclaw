@@ -235,6 +235,7 @@ func (m *mockSessionStore) GetSummary(_ context.Context, _ string) string {
 func (m *mockSessionStore) SetSummary(context.Context, string, string) {}
 func (m *mockSessionStore) GetLabel(context.Context, string) string { return "" }
 func (m *mockSessionStore) SetLabel(context.Context, string, string) {}
+func (m *mockSessionStore) SetCategory(context.Context, string, string) {}
 func (m *mockSessionStore) SetAgentInfo(context.Context, string, uuid.UUID, string) {}
 func (m *mockSessionStore) TruncateHistory(context.Context, string, int) {}
 func (m *mockSessionStore) SetHistory(context.Context, string, []providers.Message) {}

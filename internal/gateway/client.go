@@ -137,6 +137,10 @@ func (c *Client) handleFrame(ctx context.Context, data []byte) {
 			return
 		}
 
+		if req.Method == "" {
+			slog.Warn("received request with empty method", "raw", string(data), "client", c.id)
+		}
+
 		// First request must be "connect" (except browser.pairing.status for pending clients)
 		if !c.authenticated && req.Method != protocol.MethodConnect {
 			if !(c.pairingPending && req.Method == protocol.MethodBrowserPairingStatus) {

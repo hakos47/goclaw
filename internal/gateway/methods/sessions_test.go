@@ -64,6 +64,7 @@ func (s *stubSessionStore) SetLabel(_ context.Context, key, label string) {
 }
 
 func (s *stubSessionStore) UpdateMetadata(_ context.Context, _, _, _, _ string) {}
+func (s *stubSessionStore) SetCategory(_ context.Context, _, _ string) {}
 
 func (s *stubSessionStore) SetSessionMetadata(_ context.Context, _ string, _ map[string]string) {}
 

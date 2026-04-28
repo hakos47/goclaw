@@ -251,6 +251,9 @@ func (t *BrowserTool) handleSnapshot(ctx context.Context, args map[string]any) *
 	if comp, ok := args["compact"].(bool); ok {
 		opts.Compact = comp
 	}
+	if simp, ok := args["simplified"].(bool); ok {
+		opts.Simplified = simp
+	}
 	if d, ok := args["depth"].(float64); ok {
 		opts.MaxDepth = int(d)
 	}

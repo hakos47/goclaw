@@ -26,7 +26,7 @@ export function SidebarHeader() {
     <div className="pt-6 px-3 pb-2 space-y-2">
       {/* Logo + version */}
       <div className="flex items-center gap-2.5 px-1">
-        <img src="/goclaw-icon.svg" alt="GoClaw" className="h-7 w-7" />
+        <img src="/goclaw-nix.png" alt="GoClaw" className="h-7 w-7" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-base font-semibold text-text-primary">GoClaw</span>

@@ -9,6 +9,7 @@ import (
 	"github.com/nextlevelbuilder/goclaw/internal/config"
 	"github.com/nextlevelbuilder/goclaw/internal/eventbus"
 	"github.com/nextlevelbuilder/goclaw/internal/gateway"
+	"github.com/nextlevelbuilder/goclaw/internal/hooks"
 	httpapi "github.com/nextlevelbuilder/goclaw/internal/http"
 	"github.com/nextlevelbuilder/goclaw/internal/providers"
 	"github.com/nextlevelbuilder/goclaw/internal/skills"
@@ -37,4 +38,5 @@ type gatewayDeps struct {
 	domainBus        eventbus.DomainEventBus
 	audioMgr         *audio.Manager      // nil if TTS not configured; used by TTSHandler
 	ttsHandler       *httpapi.TTSHandler // nil if TTS not configured; for hot-reload
+	hookDispatcher   hooks.Dispatcher
 }

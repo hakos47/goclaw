@@ -223,6 +223,12 @@ func friendlyVerifyError(err error) string {
 		if strings.HasPrefix(suffix, "{") {
 			return "Model not recognized by provider"
 		}
+		
+		// MiniMax specific RPM hint
+		if strings.Contains(strings.ToLower(suffix), "rate limit exceeded(rpm)") {
+			return "MiniMax Embedding Quota Exceeded (RPM). Note: Chat and Embedding have separate quotas. Please check your MiniMax dashboard."
+		}
+
 		// Strip leaked JSON quotes/braces from partial extraction
 		suffix = strings.TrimRight(suffix, "{}[]")
 		suffix = strings.Trim(suffix, `"`)

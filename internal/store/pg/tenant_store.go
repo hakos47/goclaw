@@ -185,6 +185,17 @@ func (s *PGTenantStore) ListUsers(ctx context.Context, tenantID uuid.UUID) ([]st
 	return result, nil
 }
 
+func (s *PGTenantStore) ListAllUsers(ctx context.Context) ([]store.TenantUserData, error) {
+	var result []store.TenantUserData
+	err := pkgSqlxDB.SelectContext(ctx, &result,
+		`SELECT id, tenant_id, user_id, display_name, role, metadata, created_at, updated_at
+		 FROM tenant_users ORDER BY created_at`)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func (s *PGTenantStore) ListUserTenants(ctx context.Context, userID string) ([]store.TenantUserData, error) {
 	var result []store.TenantUserData
 	err := pkgSqlxDB.SelectContext(ctx, &result,

@@ -86,16 +86,15 @@ func (s *PGAgentStore) BackfillAgentEmbeddings(ctx context.Context) (int, error)
 }
 
 // agentSelectCols is the column list for all agent SELECT queries.
-const agentSelectCols = `id, agent_key, display_name, frontmatter, owner_id, provider, model,
-		 context_window, max_tool_iterations, workspace, restrict_to_workspace,
-		 tools_config, sandbox_config, subagents_config, memory_config,
-		 compaction_config, context_pruning, other_config,
-		 emoji, agent_description, thinking_level, max_tokens,
-		 self_evolve, skill_evolve, skill_nudge_interval,
-		 reasoning_config, workspace_sharing, chatgpt_oauth_routing,
-		 shell_deny_groups, kg_dedup_config,
-		 agent_type, is_default, status, budget_monthly_cents, created_at, updated_at, tenant_id`
-
+const agentSelectCols = `id, agent_key, display_name, frontmatter, owner_id, provider, model, economy_provider, economy_model,
+		context_window, max_tool_iterations, workspace, restrict_to_workspace,
+		tools_config, sandbox_config, subagents_config, memory_config,
+		compaction_config, context_pruning, other_config,
+		emoji, agent_description, thinking_level, max_tokens,
+		self_evolve, skill_evolve, skill_nudge_interval,
+		reasoning_config, workspace_sharing, chatgpt_oauth_routing,
+		shell_deny_groups, kg_dedup_config,
+		agent_type, is_default, status, budget_monthly_cents, created_at, updated_at, tenant_id`
 func (s *PGAgentStore) Create(ctx context.Context, agent *store.AgentData) error {
 	if agent.ID == uuid.Nil {
 		agent.ID = store.GenNewID()
@@ -514,10 +513,11 @@ type agentRowScanner interface {
 func scanAgentRow(row agentRowScanner) (*store.AgentData, error) {
 	var d store.AgentData
 	var frontmatter sql.NullString
+	var economyProvider, economyModel sql.NullString
 	// pgx: scan nullable JSONB into *[]byte (NOT *json.RawMessage — pgx can't scan NULL into defined types)
 	var toolsCfg, sandboxCfg, subagentsCfg, memoryCfg, compactionCfg, pruningCfg, otherCfg *[]byte
 	var reasoningCfg, wsCfg, oauthCfg, shellCfg, kgCfg *[]byte
-	err := row.Scan(&d.ID, &d.AgentKey, &d.DisplayName, &frontmatter, &d.OwnerID, &d.Provider, &d.Model,
+	err := row.Scan(&d.ID, &d.AgentKey, &d.DisplayName, &frontmatter, &d.OwnerID, &d.Provider, &d.Model, &economyProvider, &economyModel,
 		&d.ContextWindow, &d.MaxToolIterations, &d.Workspace, &d.RestrictToWorkspace,
 		&toolsCfg, &sandboxCfg, &subagentsCfg, &memoryCfg, &compactionCfg, &pruningCfg, &otherCfg,
 		&d.Emoji, &d.AgentDescription, &d.ThinkingLevel, &d.MaxTokens,
@@ -529,6 +529,12 @@ func scanAgentRow(row agentRowScanner) (*store.AgentData, error) {
 	}
 	if frontmatter.Valid {
 		d.Frontmatter = frontmatter.String
+	}
+	if economyProvider.Valid {
+		d.EconomyProvider = economyProvider.String
+	}
+	if economyModel.Valid {
+		d.EconomyModel = economyModel.String
 	}
 	// Convert *[]byte → json.RawMessage (nil-safe)
 	if toolsCfg != nil {

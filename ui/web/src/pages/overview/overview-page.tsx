@@ -129,7 +129,7 @@ export function OverviewPage() {
   const clientList = health?.clients ?? [];
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
+    <div className="space-y-6 p-4 sm:p-6 min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/10 via-[#050505] to-[#000000]">
       {/* Header */}
       <PageHeader
         title={t("title")}

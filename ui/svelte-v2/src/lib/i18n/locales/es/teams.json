@@ -1,0 +1,40 @@
+{
+  "title": "Agent Teams",
+  "description": "Orchestrate multiple agents to solve complex tasks.",
+  "createTeam": "Deploy New Unit",
+  "searchPlaceholder": "Search units...",
+  "emptyTitle": "No tactical units deployed",
+  "noMatchTitle": "No matching units found",
+  "tabs": {
+    "teams": "Active Units",
+    "links": "Neural Links"
+  },
+  "create": {
+    "title": "Deploy Tactical Unit",
+    "subtitle": "NIX-0 Team Deployment Protocol",
+    "name": "Unit Designation *",
+    "namePlaceholder": "e.g. ALPHA SQUAD",
+    "description": "Mission Orders",
+    "descriptionPlaceholder": "Brief description of the team's objective...",
+    "leadAgent": "Commander (Lead) *",
+    "selectLeadAgent": "Select unit commander...",
+    "loadingAgents": "Syncing personnel...",
+    "noActiveAgents": "No active agents available for leadership",
+    "members": "Tactical Personnel *",
+    "searchMembers": "Add specialists to unit...",
+    "membersTooltip": "Members must be predefined agents to ensure collaboration context.",
+    "needMembers": "At least 1 tactical specialist required",
+    "cancel": "Cancel",
+    "creating": "Deploying...",
+    "create": "Initiate Deployment"
+  },
+  "links": {
+    "title": "Neural Grid",
+    "description": "Manage inter-agent delegation links",
+    "create": "Establish Link",
+    "save": "Save Changes",
+    "deleteTitle": "Delete Link",
+    "confirmDelete": "Are you sure you want to delete this neural link? Delegation between these agents will be interrupted.",
+    "deleteFailed": "Failed to delete link"
+  }
+}

@@ -65,6 +65,7 @@ type TenantStore interface {
 	RemoveUser(ctx context.Context, tenantID uuid.UUID, userID string) error
 	GetUserRole(ctx context.Context, tenantID uuid.UUID, userID string) (string, error)
 	ListUsers(ctx context.Context, tenantID uuid.UUID) ([]TenantUserData, error)
+	ListAllUsers(ctx context.Context) ([]TenantUserData, error)
 	ListUserTenants(ctx context.Context, userID string) ([]TenantUserData, error)
 
 	// GetTenantsByIDs returns tenants matching the given UUIDs in a single query.

@@ -38,23 +38,8 @@ func (m *SessionsMethods) Register(router *gateway.MethodRouter) {
 func (m *SessionsMethods) handleSummary(ctx context.Context, client *gateway.Client, req *protocol.RequestFrame) {
 	tid := store.TenantIDFromContext(ctx)
 	
-	// Categorization logic: 
-	// - Inbound: WhatsApp / Facebook
-	// - Support: Telegram / Discord
-	// - Personal: Web / Direct (non-system)
-	// - Evolution: Internal / Self-Evolution
-	// - System: Automated / Diagnostic (contains 'system' in key)
-	
-	// Group counts by channel_type directly in SQL for efficiency.
-	query := `SELECT 
-		CASE 
-			WHEN channel_type IN ('whatsapp', 'facebook') THEN 'inbound'
-			WHEN channel_type IN ('telegram', 'discord') THEN 'support'
-			WHEN channel_type IN ('internal', 'evolution') THEN 'evolution'
-			WHEN session_key LIKE '%system%' THEN 'system'
-			ELSE 'personal'
-		END as category,
-		count(*) as count
+	// Group counts by the native indexed category column for maximum performance (TASK-016)
+	query := `SELECT category, count(*) as count
 		FROM sessions 
 		WHERE tenant_id = $1
 		GROUP BY category`
@@ -67,11 +52,11 @@ func (m *SessionsMethods) handleSummary(ctx context.Context, client *gateway.Cli
 	defer rows.Close()
 
 	summary := map[string]int{
+		"personal":  0,
 		"inbound":   0,
 		"support":   0,
-		"personal":  0,
-		"evolution": 0,
 		"system":    0,
+		"evolution": 0,
 	}
 	for rows.Next() {
 		var cat string

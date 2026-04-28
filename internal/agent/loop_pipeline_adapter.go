@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/nextlevelbuilder/goclaw/internal/config"
 	"github.com/nextlevelbuilder/goclaw/internal/eventbus"
@@ -21,10 +22,18 @@ func (l *Loop) runViaPipeline(ctx context.Context, req RunRequest) (*RunResult, 
 	deps := l.buildPipelineDeps(&req, bridgeRS)
 
 	model := l.model
+	provider := l.provider
+
+	// Economy Routing (TASK-019): Switch to cheaper models for lead-gen channels
+	isLead := req.ChannelType == "whatsapp" || req.ChannelType == "facebook"
+	if isLead && l.economyModel != "" {
+		model = l.economyModel
+		slog.Debug("agent.loop: economy model routing applied", "agent", l.id, "channel", req.ChannelType, "model", model)
+	}
+
 	if req.ModelOverride != "" {
 		model = req.ModelOverride
 	}
-	provider := l.provider
 	if req.ProviderOverride != nil {
 		provider = req.ProviderOverride
 	}
@@ -194,6 +203,9 @@ func (l *Loop) buildPipelineDeps(req *RunRequest, bridgeRS *runState) pipeline.P
 		UpdateMetadata:   cb.updateMetadata,
 		BootstrapCleanup: cb.bootstrapCleanup,
 		MaybeSummarize:   cb.maybeSummarize,
+
+		SetSessionCategory: cb.setSessionCategory,
+		SetSessionMetadata: cb.setSessionMetadata,
 	}
 }
 

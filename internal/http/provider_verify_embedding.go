@@ -64,16 +64,22 @@ func (h *ProvidersHandler) handleVerifyEmbedding(w http.ResponseWriter, r *http.
 		apiBase = es.APIBase
 	}
 
-	ep := memory.NewOpenAIEmbeddingProvider(p.Name, p.APIKey, apiBase, model)
+	var ep memory.EmbeddingProvider
+	if p.ProviderType == store.ProviderMiniMax {
+		ep = memory.NewMinimaxEmbeddingProvider(p.Name, p.APIKey, apiBase, model)
+	} else {
+		oep := memory.NewOpenAIEmbeddingProvider(p.Name, p.APIKey, apiBase, model)
 
-	// Apply dimension truncation: request body → provider settings → none.
-	// Clamp to reasonable range to avoid sending absurd values upstream.
-	truncDims := req.Dimensions
-	if truncDims <= 0 && es != nil && es.Dimensions > 0 {
-		truncDims = es.Dimensions
-	}
-	if truncDims > 0 && truncDims <= 8192 {
-		ep.WithDimensions(truncDims)
+		// Apply dimension truncation: request body → provider settings → none.
+		// Clamp to reasonable range to avoid sending absurd values upstream.
+		truncDims := req.Dimensions
+		if truncDims <= 0 && es != nil && es.Dimensions > 0 {
+			truncDims = es.Dimensions
+		}
+		if truncDims > 0 && truncDims <= 8192 {
+			oep.WithDimensions(truncDims)
+		}
+		ep = oep
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
@@ -89,8 +95,13 @@ func (h *ProvidersHandler) handleVerifyEmbedding(w http.ResponseWriter, r *http.
 	if len(vectors) > 0 && len(vectors[0]) > 0 {
 		dims = len(vectors[0])
 	}
-	result := map[string]any{"valid": true, "dimensions": dims}
-	if dims > 0 && dims != 1536 {
+	
+	valid := dims > 0
+	result := map[string]any{"valid": valid, "dimensions": dims}
+	
+	if !valid {
+		result["error"] = "received empty embedding vector from provider"
+	} else if dims != 1536 {
 		result["dimension_mismatch"] = true
 	}
 	writeJSON(w, http.StatusOK, result)

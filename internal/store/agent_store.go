@@ -49,6 +49,8 @@ type AgentData struct {
 	OwnerID             string    `json:"owner_id" db:"owner_id"`
 	Provider            string    `json:"provider" db:"provider"`
 	Model               string    `json:"model" db:"model"`
+	EconomyProvider     string    `json:"economy_provider" db:"economy_provider"`
+	EconomyModel        string    `json:"economy_model" db:"economy_model"`
 	ContextWindow       int       `json:"context_window" db:"context_window"`
 	MaxToolIterations   int       `json:"max_tool_iterations" db:"max_tool_iterations"`
 	Workspace           string    `json:"workspace" db:"workspace"`

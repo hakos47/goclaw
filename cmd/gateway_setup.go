@@ -580,15 +580,17 @@ func setupSkillsSystem(
 				skillSearchTool.SetEmbeddingSearcher(pgSkills, embProvider)
 				slog.Info("skill embeddings enabled", "provider", embProvider.Name())
 
-				// Backfill embeddings for existing skills
-				go func() {
-					count, err := pgSkills.BackfillSkillEmbeddings(context.Background())
-					if err != nil {
-						slog.Warn("skill embeddings backfill failed", "error", err)
-					} else if count > 0 {
-						slog.Info("skill embeddings backfill complete", "skills_updated", count)
-					}
-				}()
+				// Backfill embeddings for existing skills disabled to avoid rate limits on MiniMax
+				/*
+					go func() {
+						count, err := pgSkills.BackfillSkillEmbeddings(context.Background())
+						if err != nil {
+							slog.Warn("skill embeddings backfill failed", "error", err)
+						} else if count > 0 {
+							slog.Info("skill embeddings backfill complete", "skills_updated", count)
+						}
+					}()
+				*/
 			}
 		}
 	}

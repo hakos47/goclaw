@@ -202,6 +202,16 @@ func (s *SQLiteTenantStore) ListUsers(ctx context.Context, tenantID uuid.UUID) (
 	return convertTenantUserRows(rows), nil
 }
 
+func (s *SQLiteTenantStore) ListAllUsers(ctx context.Context) ([]store.TenantUserData, error) {
+	var rows []tenantUserRow
+	err := pkgSqlxDB.SelectContext(ctx, &rows,
+		`SELECT `+tenantUserSelectCols+` FROM tenant_users ORDER BY created_at`)
+	if err != nil {
+		return nil, err
+	}
+	return convertTenantUserRows(rows), nil
+}
+
 func (s *SQLiteTenantStore) ListUserTenants(ctx context.Context, userID string) ([]store.TenantUserData, error) {
 	var rows []tenantUserRow
 	err := pkgSqlxDB.SelectContext(ctx, &rows,

@@ -13,6 +13,8 @@ import (
 	"github.com/nextlevelbuilder/goclaw/internal/bus"
 	"github.com/nextlevelbuilder/goclaw/internal/channels"
 	"github.com/nextlevelbuilder/goclaw/internal/channels/telegram/voiceguard"
+	"github.com/nextlevelbuilder/goclaw/internal/hooks"
+	hookhandlers "github.com/nextlevelbuilder/goclaw/internal/hooks/handlers"
 	"github.com/nextlevelbuilder/goclaw/internal/i18n"
 	"github.com/nextlevelbuilder/goclaw/internal/scheduler"
 	"github.com/nextlevelbuilder/goclaw/internal/sessions"
@@ -95,6 +97,41 @@ func processNormalMessage(
 		} else {
 			groupID := msg.ChatID
 			userID = fmt.Sprintf("group:%s:%s", msg.Channel, groupID)
+		}
+	}
+
+	// Fire classification/pre-processing hooks (TASK-018)
+	if deps.HookDispatcher != nil {
+		hEv := hooks.Event{
+			EventID:   uuid.NewString(),
+			SessionID: sessionKey,
+			TenantID:  msg.TenantID,
+			AgentID:   agentLoop.UUID(),
+			RawInput:  msg.Content,
+			HookEvent: hooks.EventUserPromptSubmit,
+		}
+		// Metadata check: if session is new or personal, try to re-classify
+		sessData := deps.SessStore.Get(ctx, sessionKey)
+		if sessData != nil && (sessData.Category == "" || sessData.Category == "personal") {
+			// Trigger async classification to ensure 0ms latency injection
+			go func(asyncCtx context.Context, ev hooks.Event, sk string) {
+				// Run specific classification handler first
+				classHandler := hookhandlers.NewClassificationHandler(deps.SessStore)
+				classHandler.HandleEvent(asyncCtx, ev)
+
+				// Keep the dispatcher running for other user-defined hooks
+				res, err := deps.HookDispatcher.Fire(asyncCtx, ev)
+				if err == nil {
+					if res.UpdatedCategory != "" {
+						deps.SessStore.SetCategory(asyncCtx, sk, res.UpdatedCategory)
+						slog.Info("inbound: session auto-classified via dispatcher", "session", sk, "category", res.UpdatedCategory)
+					}
+					if res.UpdatedMetadata != nil {
+						deps.SessStore.SetSessionMetadata(asyncCtx, sk, res.UpdatedMetadata)
+					}
+					// RawInput mutation is ignored because we are async now
+				}
+			}(context.Background(), hEv, sessionKey)
 		}
 	}
 

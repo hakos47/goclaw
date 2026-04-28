@@ -39,14 +39,14 @@ func (s *SQLiteSessionStore) Save(ctx context.Context, key string) error {
 			memory_flush_compaction_count = ?, memory_flush_at = ?,
 			label = ?, spawned_by = ?, spawn_depth = ?,
 			agent_id = ?, user_id = ?, metadata = ?, updated_at = ?,
-			team_id = ?
+			team_id = ?, category = ?
 		 WHERE session_key = ? AND tenant_id = ?`,
 		msgsJSON, nilStr(snapshot.Summary), nilStr(snapshot.Model), nilStr(snapshot.Provider), nilStr(snapshot.Channel),
 		snapshot.InputTokens, snapshot.OutputTokens, snapshot.CompactionCount,
 		snapshot.MemoryFlushCompactionCount, snapshot.MemoryFlushAt,
 		nilStr(snapshot.Label), nilStr(snapshot.SpawnedBy), snapshot.SpawnDepth,
 		nilSessionUUID(snapshot.AgentUUID), nilStr(snapshot.UserID), metaJSON, snapshot.Updated,
-		snapshot.TeamID,
+		snapshot.TeamID, snapshot.Category,
 		key, tenantIDForInsert(ctx),
 	)
 	if err != nil {

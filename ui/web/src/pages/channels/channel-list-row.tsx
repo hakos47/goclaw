@@ -93,12 +93,12 @@ export function ChannelListRow({
                   <span className="font-mono">{instance.name}</span>
                   <span className="text-border">·</span>
                   <span className="truncate">{agentName}</span>
-                  {instance.channel_type === "whatsapp" && instance.config?.owner_jid && (
+                  {instance.channel_type === "whatsapp" && !!instance.config?.owner_jid && (
                     <>
                       <span className="text-border">·</span>
                       <span className="truncate flex items-center gap-1">
                         <span className="text-[10px] font-semibold uppercase opacity-70">Owner:</span>
-                        <span className="font-mono text-[10px]">{String(instance.config.owner_jid).includes("***") ? instance.config.owner_jid : "********"}</span>
+                        <span className="font-mono text-[10px]">{String(instance.config.owner_jid).includes("***") ? String(instance.config.owner_jid) : "********"}</span>
                       </span>
                     </>
                   )}

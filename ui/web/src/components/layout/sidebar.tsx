@@ -62,7 +62,7 @@ export function Sidebar({ collapsed, onNavItemClick }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex h-full flex-col border-r bg-sidebar text-sidebar-foreground transition-all duration-200",
+        "flex h-full flex-col border-r border-white/10 bg-black/40 backdrop-blur-2xl text-sidebar-foreground transition-all duration-300 shadow-[2px_0_15px_rgba(0,0,0,0.5)] relative z-50",
         collapsed ? "w-16" : "w-64",
       )}
       onClick={(e) => {
@@ -76,14 +76,14 @@ export function Sidebar({ collapsed, onNavItemClick }: SidebarProps) {
       <div className="flex h-14 items-center border-b px-4">
         {!collapsed && (
           <div className="flex items-center gap-2.5">
-            <img src="/goclaw-icon.svg" alt="GoClaw" className="h-8 w-8" />
+            <img src="/goclaw-nix.png" alt="GoClaw" className="h-8 w-8" />
             <span className="text-lg font-bold tracking-tight text-sidebar-primary">
               GoClaw
             </span>
           </div>
         )}
         {collapsed && (
-          <img src="/goclaw-icon.svg" alt="GoClaw" className="mx-auto h-7 w-7" />
+          <img src="/goclaw-nix.png" alt="GoClaw" className="mx-auto h-7 w-7" />
         )}
       </div>
 

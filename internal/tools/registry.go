@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -124,7 +125,7 @@ func (r *Registry) Execute(ctx context.Context, name string, args map[string]any
 	return r.ExecuteWithContext(ctx, name, args, "", "", "", "", nil)
 }
 
-func (r *Registry) ExecuteWithContext(ctx context.Context, name string, args map[string]any, channel, chatID, peerKind, sessionKey string, asyncCB AsyncCallback) *Result {
+func (r *Registry) ExecuteWithContext(ctx context.Context, name string, args map[string]any, channel, chatID, peerKind, sessionKey string, asyncCB AsyncCallback) (result *Result) {
 	if strings.HasPrefix(name, "whatsapp_") {
 		all := r.List()
 		slog.Info("debug.registry.execute", "requested", name, "available", all)
@@ -133,6 +134,22 @@ func (r *Registry) ExecuteWithContext(ctx context.Context, name string, args map
 	t, ok := r.Get(name)
 	if !ok {
 		return ErrorResult("unknown tool: " + name)
+	}
+
+	defer func() {
+		if p := recover(); p != nil {
+			result = ErrorResult(fmt.Sprintf("tool %s panicked: %v", name, p))
+		}
+	}()
+
+	r.mu.RLock()
+	rl := r.rateLimiter
+	r.mu.RUnlock()
+
+	if rl != nil && sessionKey != "" {
+		if err := rl.Allow(sessionKey); err != nil {
+			return ErrorResult("rate limit exceeded for tool: " + name)
+		}
 	}
 
 	if channel != "" {
@@ -144,8 +161,25 @@ func (r *Registry) ExecuteWithContext(ctx context.Context, name string, args map
 	if peerKind != "" {
 		ctx = WithToolPeerKind(ctx, peerKind)
 	}
+	if sessionKey != "" {
+		ctx = WithToolSandboxKey(ctx, sessionKey)
+	}
+	if asyncCB != nil {
+		ctx = WithToolAsyncCB(ctx, asyncCB)
+	}
 
-	return t.Execute(ctx, args)
+	result = t.Execute(ctx, args)
+
+	if result != nil {
+		if result.ForLLM != "" {
+			result.ForLLM = ScrubCredentials(result.ForLLM)
+		}
+		if result.ForUser != "" {
+			result.ForUser = ScrubCredentials(result.ForUser)
+		}
+	}
+
+	return result
 }
 
 func (r *Registry) ProviderDefs() []providers.ToolDefinition {

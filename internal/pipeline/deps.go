@@ -106,6 +106,8 @@ type PipelineDeps struct {
 	IsSilentReply          func(content string) bool
 	EmitSessionCompleted   func(ctx context.Context, sessionKey string, msgCount, tokensUsed, compactionCount int)
 	UpdateMetadata         func(ctx context.Context, sessionKey string, usage providers.Usage) error
+	SetSessionCategory     func(ctx context.Context, sessionKey, category string)
+	SetSessionMetadata     func(ctx context.Context, sessionKey string, metadata map[string]string)
 	BootstrapCleanup       func(ctx context.Context, state *RunState) error
 	MaybeSummarize         func(ctx context.Context, sessionKey string)
 }
@@ -118,7 +120,17 @@ func (d *PipelineDeps) FireHook(ctx context.Context, ev hooks.Event) (hooks.Fire
 	if d == nil || d.Hooks == nil {
 		return hooks.FireResult{Decision: hooks.DecisionAllow}, nil
 	}
-	return d.Hooks.Fire(ctx, ev)
+	res, err := d.Hooks.Fire(ctx, ev)
+	if err == nil {
+		// Automatically apply session-level mutations returned by any hook in the chain.
+		if res.UpdatedCategory != "" && d.SetSessionCategory != nil {
+			d.SetSessionCategory(ctx, ev.SessionID, res.UpdatedCategory)
+		}
+		if res.UpdatedMetadata != nil && d.SetSessionMetadata != nil {
+			d.SetSessionMetadata(ctx, ev.SessionID, res.UpdatedMetadata)
+		}
+	}
+	return res, err
 }
 
 // PipelineConfig holds pipeline-level settings.

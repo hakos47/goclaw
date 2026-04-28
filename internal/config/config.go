@@ -134,6 +134,8 @@ type AgentDefaults struct {
 	RestrictToWorkspace bool                  `json:"restrict_to_workspace"`
 	Provider            string                `json:"provider"`
 	Model               string                `json:"model"`
+	EconomyProvider     string                `json:"economy_provider,omitempty"` // fallback for high-volume channels
+	EconomyModel        string                `json:"economy_model,omitempty"`    // e.g. "gpt-4o-mini"
 	MaxTokens           int                   `json:"max_tokens"`
 	Temperature         float64               `json:"temperature"`
 	MaxToolIterations   int                   `json:"max_tool_iterations"`
@@ -424,6 +426,8 @@ type AgentSpec struct {
 	DisplayName       string          `json:"displayName,omitempty"`
 	Provider          string          `json:"provider,omitempty"`
 	Model             string          `json:"model,omitempty"`
+	EconomyProvider   string          `json:"economyProvider,omitempty"`
+	EconomyModel      string          `json:"economyModel,omitempty"`
 	MaxTokens         int             `json:"max_tokens,omitempty"`
 	Temperature       float64         `json:"temperature,omitempty"`
 	MaxToolIterations int             `json:"max_tool_iterations,omitempty"`

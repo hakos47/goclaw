@@ -223,6 +223,82 @@ func (p *OpenAIEmbeddingProvider) Embed(ctx context.Context, texts []string) ([]
 	return embeddings, nil
 }
 
+// MinimaxEmbeddingProvider uses the MiniMax-native embedding API.
+type MinimaxEmbeddingProvider struct {
+	name   string
+	model  string
+	apiKey string
+	apiURL string
+}
+
+func NewMinimaxEmbeddingProvider(name, apiKey, apiURL, model string) *MinimaxEmbeddingProvider {
+	if apiURL == "" {
+		apiURL = "https://api.minimax.io/v1"
+	}
+	if model == "" {
+		model = "emba-01"
+	}
+	return &MinimaxEmbeddingProvider{
+		name:   name,
+		model:  model,
+		apiKey: apiKey,
+		apiURL: apiURL,
+	}
+}
+
+func (p *MinimaxEmbeddingProvider) Name() string  { return p.name }
+func (p *MinimaxEmbeddingProvider) Model() string { return p.model }
+
+func (p *MinimaxEmbeddingProvider) Embed(ctx context.Context, texts []string) ([][]float32, error) {
+	reqBody := map[string]any{
+		"model": p.model,
+		"texts": texts,
+		"type":  "db", // default for search/memory
+	}
+
+	bodyJSON, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.apiURL+"/embeddings", bytes.NewReader(bodyJSON))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+p.apiKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("embedding request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("embedding API error %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		Vectors  [][]float32 `json:"vectors"`
+		BaseResp struct {
+			StatusCode int    `json:"status_code"`
+			StatusMsg  string `json:"status_msg"`
+		} `json:"base_resp"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("decode response: %w", err)
+	}
+
+	if result.BaseResp.StatusCode != 0 {
+		return nil, fmt.Errorf("minimax error %d: %s", result.BaseResp.StatusCode, result.BaseResp.StatusMsg)
+	}
+
+	return result.Vectors, nil
+}
+
 // CosineSimilarity computes the cosine similarity between two vectors.
 // Returns a value between -1 and 1 (1 = identical).
 func CosineSimilarity(a, b []float32) float64 {

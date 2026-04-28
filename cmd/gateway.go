@@ -303,7 +303,8 @@ func runGateway() {
 	var mcpPool *mcpbridge.Pool
 	var mediaStore *media.Store
 	var postTurn tools.PostTurnProcessor
-	contextFileInterceptor, mcpPool, mediaStore, postTurn = wireExtras(pgStores, agentRouter, providerRegistry, modelReg, msgBus, pgStores.Sessions, toolsReg, toolPE, skillsLoader, hasMemory, traceCollector, workspace, cfg.Gateway.InjectionAction, cfg, sandboxMgr, redisClient, domainBus)
+	var hookDispatcher hooks.Dispatcher
+	contextFileInterceptor, mcpPool, mediaStore, postTurn, hookDispatcher = wireExtras(pgStores, agentRouter, providerRegistry, modelReg, msgBus, pgStores.Sessions, toolsReg, toolPE, skillsLoader, hasMemory, traceCollector, workspace, cfg.Gateway.InjectionAction, cfg, sandboxMgr, redisClient, domainBus)
 	if mcpPool != nil {
 		defer mcpPool.Stop()
 	}
@@ -324,6 +325,7 @@ func runGateway() {
 		dataDir:          dataDir,
 		domainBus:        domainBus,
 		audioMgr:         audioMgr,
+		hookDispatcher:   hookDispatcher,
 	}
 
 	gatewayAddr := loopbackAddr(cfg.Gateway.Host, cfg.Gateway.Port)

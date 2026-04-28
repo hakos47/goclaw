@@ -22,6 +22,7 @@ type SessionData struct {
 
 	SourceChannelID *uuid.UUID `json:"sourceChannelID,omitempty" db:"source_channel_id"` // Acquisition channel ID
 	ChannelType     string     `json:"channelType,omitempty" db:"channel_type"`           // e.g. "whatsapp", "telegram", "web"
+	Category        string     `json:"category,omitempty" db:"category"`                 // e.g. "inbound", "support", "personal", "system"
 
 	Model                      string `json:"model,omitempty" db:"model"`
 	Provider                   string `json:"provider,omitempty" db:"provider"`
@@ -52,6 +53,7 @@ type SessionInfo struct {
 	Channel      string            `json:"channel,omitempty" db:"channel"`
 	SourceChannelID *uuid.UUID     `json:"sourceChannelID,omitempty" db:"source_channel_id"`
 	ChannelType     string         `json:"channelType,omitempty" db:"channel_type"`
+	Category        string         `json:"category,omitempty" db:"category"`
 	UserID       string            `json:"userID,omitempty" db:"user_id"`
 	Metadata     map[string]string `json:"metadata,omitempty" db:"metadata"`
 }
@@ -114,6 +116,7 @@ type SessionCoreStore interface {
 // SessionMetadataStore manages session metadata, token tracking, and calibration.
 type SessionMetadataStore interface {
 	UpdateMetadata(ctx context.Context, key, model, provider, channel string)
+	SetCategory(ctx context.Context, key, category string)
 	AccumulateTokens(ctx context.Context, key string, input, output int64)
 	IncrementCompaction(ctx context.Context, key string)
 	GetCompactionCount(ctx context.Context, key string) int

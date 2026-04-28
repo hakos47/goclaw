@@ -151,6 +151,8 @@ type FireResult struct {
 	Decision         Decision
 	UpdatedToolInput map[string]any
 	UpdatedRawInput  *string
+	UpdatedCategory  string
+	UpdatedMetadata  map[string]string
 }
 
 // ─── Config & execution structs ──────────────────────────────────────────────

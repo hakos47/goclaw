@@ -9,6 +9,7 @@ interface SidebarItemProps {
   badge?: number;
   collapsed?: boolean;
   external?: boolean;
+  className?: string;
 }
 
 export function SidebarItem({
@@ -18,15 +19,17 @@ export function SidebarItem({
   badge,
   collapsed,
   external,
+  className: customClassName,
 }: SidebarItemProps) {
   const location = useLocation();
   const active = !external && (location.pathname === to || location.pathname.startsWith(to + "/"));
 
   const className = cn(
     "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-    "hover:bg-accent hover:text-accent-foreground",
-    active && "bg-accent text-accent-foreground font-medium",
+    "hover:bg-purple-500/10 hover:text-purple-400",
+    active && "bg-purple-500/20 text-purple-400 font-medium",
     collapsed && "justify-center px-2",
+    customClassName
   );
 
   const content = (

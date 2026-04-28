@@ -161,6 +161,14 @@ func removeNthFromNonDuplicates(refs map[string]RoleRef, tracker *roleNameTracke
 // - TS cdp.ts:192-249 (formatAriaSnapshot) — tree building
 // - TS pw-role-snapshot.ts:207-267 (processLine) — role filtering + ref assignment
 func FormatSnapshot(nodes []*proto.AccessibilityAXNode, opts SnapshotOptions) *SnapshotResult {
+	if opts.Simplified {
+		opts.Compact = true
+		opts.Interactive = true
+		if opts.MaxChars == 0 || opts.MaxChars > 4000 {
+			opts.MaxChars = 4000
+		}
+	}
+
 	if opts.MaxChars == 0 {
 		opts.MaxChars = 8000
 	}

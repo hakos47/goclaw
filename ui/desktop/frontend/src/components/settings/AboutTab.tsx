@@ -17,7 +17,7 @@ export function AboutTab() {
   return (
     <div className="space-y-6 max-w-lg">
       <div className="flex items-center gap-4">
-        <img src="/goclaw-icon.svg" alt="GoClaw" className="h-12 w-12" />
+        <img src="/goclaw-nix.png" alt="GoClaw" className="h-12 w-12" />
         <div>
           <h3 className="text-base font-semibold text-text-primary">{t('about.title')}</h3>
           <p className="text-xs text-text-muted">{t('about.subtitle')}</p>

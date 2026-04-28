@@ -110,10 +110,11 @@ func TestRegistry_ExecuteWithContext_InjectsContextValues(t *testing.T) {
 	}
 	if gotAsyncCB == nil {
 		t.Error("asyncCB should not be nil")
-	}
-	gotAsyncCB(context.Background(), nil)
-	if !called {
-		t.Error("asyncCB was not properly propagated")
+	} else {
+		gotAsyncCB(context.Background(), nil)
+		if !called {
+			t.Error("asyncCB was not properly propagated")
+		}
 	}
 }
 

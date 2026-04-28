@@ -25,6 +25,7 @@ type Session struct {
 	Model           string `json:"model,omitempty"`
 	Provider        string `json:"provider,omitempty"`
 	Channel         string `json:"channel,omitempty"`
+	Category        string `json:"category,omitempty"`
 	InputTokens     int64  `json:"inputTokens,omitempty"`
 	OutputTokens    int64  `json:"outputTokens,omitempty"`
 	CompactionCount             int    `json:"compactionCount,omitempty"`
@@ -160,6 +161,15 @@ func (m *Manager) UpdateMetadata(_ context.Context, key, model, provider, channe
 		if channel != "" {
 			s.Channel = channel
 		}
+	}
+}
+
+// SetCategory sets the category of a session.
+func (m *Manager) SetCategory(_ context.Context, key, category string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if s, ok := m.sessions[key]; ok {
+		s.Category = category
 	}
 }
 

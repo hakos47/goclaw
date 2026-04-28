@@ -1,0 +1,71 @@
+{
+  "title": "Copias de Seguridad",
+  "description": "Gestionar snapshots del sistema, backups automatizados y aislamiento de datos multi-tenant.",
+  "tabs": {
+    "systemBackup": "Backup del Sistema",
+    "systemRestore": "Restaurar Sistema",
+    "s3Config": "Configuración S3",
+    "tenantBackup": "Snapshots Inquilinos"
+  },
+  "systemBackup": {
+    "title": "Snapshot del Sistema",
+    "description": "Generar una copia de seguridad completa incluyendo la base de datos principal y todos los archivos persistentes.",
+    "start": "Generar Copia de Seguridad",
+    "startToS3": "Subir Directo a S3",
+    "generating": "Generando Snapshot...",
+    "downloadReady": "Snapshot Listo para Descargar",
+    "downloadSize": "Tamaño: {{size}} MB",
+    "downloadBtn": "Descargar Archivo",
+    "uploadS3Btn": "Subir al Bucket S3 Configurado",
+    "uploading": "Subiendo a S3..."
+  },
+  "preflight": {
+    "title": "Diagnóstico del Sistema",
+    "refresh": "Actualizar",
+    "pgDump": "PG Dump Disponible",
+    "diskSpace": "Espacio en Disco Suficiente",
+    "dbSize": "Tamaño de Base de Datos",
+    "dataDir": "Tamaño de Almacenamiento",
+    "workspace": "Tamaño del Workspace",
+    "freeDisk": "Disco Libre",
+    "warnings": "Advertencias",
+    "critical": "CHEQUEOS CRÍTICOS FALLIDOS. EL BACKUP PUEDE CORROMPERSE O FALLAR.",
+    "pgDumpMissing": "Falta el binario pg_dump",
+    "goToPackages": "Instalar desde el Módulo de Paquetes"
+  },
+  "systemRestore": {
+    "title": "Restauración del Sistema",
+    "description": "Restaurar el sistema desde un snapshot .tar.gz existente.",
+    "warning": "ADVERTENCIA: La restauración sobrescribirá la base de datos actual y el almacenamiento de archivos. El sistema se reiniciará automáticamente tras la restauración.",
+    "dryRun": "Modo Prueba (Solo Validar)",
+    "skipDb": "Omitir Extracción BD",
+    "skipFiles": "Omitir Extracción Archivos",
+    "selectFile": "Seleccionar Archivo (.tar.gz)",
+    "startRestore": "Iniciar Restauración",
+    "restoring": "Restauración en Progreso...",
+    "confirmTitle": "Operación Crítica",
+    "confirmDesc": "Estás a punto de restaurar el estado del sistema. Esta operación es IRREVERSIBLE. ¿Estás absolutamente seguro?"
+  },
+  "s3Config": {
+    "title": "Almacenamiento Remoto S3",
+    "description": "Configurar un backend compatible con S3 (AWS, Cloudflare R2, MinIO) para copias automatizadas y remotas.",
+    "save": "Guardar Configuración",
+    "saving": "Guardando...",
+    "endpoint": "URL del Endpoint",
+    "region": "Región",
+    "bucket": "Nombre del Bucket",
+    "accessKey": "ID Clave de Acceso",
+    "secretKey": "Clave de Acceso Secreta",
+    "forcePathStyle": "Forzar Estilo de Ruta"
+  },
+  "tenantBackup": {
+    "title": "Operaciones de Datos de Inquilino",
+    "description": "Los administradores pueden exportar o importar entornos aislados sin afectar las configuraciones globales.",
+    "tenantSelect": "Seleccionar Inquilino Destino",
+    "backupSection": "Exportar Inquilino",
+    "restoreSection": "Importar Inquilino",
+    "startBackup": "Exportar Inquilino Seleccionado",
+    "startRestore": "Importar sobre Inquilino Seleccionado",
+    "confirmRestore": "Estás a punto de sobrescribir toda la base de datos y sistema de archivos aislado de este inquilino. ¿Proceder?"
+  }
+}
