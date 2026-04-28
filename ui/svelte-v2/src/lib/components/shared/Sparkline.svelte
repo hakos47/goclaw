@@ -67,7 +67,7 @@
       <!-- Area -->
       <path d={areaD} fill="url(#sparkGrad)" stroke="none" />
       <!-- Line -->
-      <path d={pathD} fill="none" stroke={color} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+      <path d={pathD} fill="none" stroke={color} stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" opacity="0.9" />
     </svg>
   {:else}
     <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 40">

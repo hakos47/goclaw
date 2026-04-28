@@ -5,11 +5,12 @@
     Terminal, Settings, ShieldCheck, Users, Link, Package, Blocks, Plug, Volume2, Cpu, 
     ClipboardList, HardDrive, Inbox, Brain, Network, Contact, KeyRound, Building2, 
     ArrowLeftRight, FileArchive, DatabaseBackup, Webhook, Target, LifeBuoy, Briefcase, 
-    TrendingUp, LogOut, Hexagon, User 
+    TrendingUp, LogOut, Hexagon, User, X
   } from "lucide-svelte";
   import { _ } from "svelte-i18n";
-  import { authState } from "../state/auth.svelte";
+  import { authState, logout } from "../state/auth.svelte";
   import { wsState, useWsCall } from "../state/ws.svelte";
+  import { uiState, toggleMobileMenu } from "../state/ui.svelte";
 
   let navGroups = $derived([
     {
@@ -113,8 +114,10 @@
 
 </script>
 
-<!-- The Main Trigger Pill (Bottom Center) -->
-<div 
+<!-- Desktop Radial Menu -->
+<div class="hidden md:block">
+  <!-- The Main Trigger Pill (Bottom Center) -->
+  <div 
   class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] group/nav flex flex-col items-center gap-1.5"
   onmouseenter={() => isHovered = true}
   onmouseleave={() => isHovered = false}
@@ -159,7 +162,7 @@
         
         <!-- Radial Hover Tooltip (Appears above the icon) -->
         <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-50">
-          <div class="px-3 py-1.5 rounded-xl bg-black/40 backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.5)] whitespace-nowrap">
+          <div class="px-3 py-1.5 rounded-xl bg-black/60 backdrop-blur-md border border-[#d946ef]/20 shadow-[0_4px_15px_rgba(217,70,239,0.2)] whitespace-nowrap">
             <span class="text-[11px] font-bold tracking-widest uppercase text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">{item.label}</span>
           </div>
         </div>
@@ -169,25 +172,84 @@
   </div>
 </div>
 
-<!-- Floating Operator Badge -->
-<div class="fixed bottom-6 left-6 z-[100]">
-  <button class="relative flex items-center gap-3 px-2 py-2 rounded-full border border-white/5 bg-[#070514]/60 backdrop-blur-xl hover:bg-[#070514]/90 hover:border-white/10 transition-all duration-500 group overflow-hidden">
-    <div class="relative flex items-center justify-center w-10 h-10 rounded-full bg-black border border-white/10 group-hover:border-goclaw-neon-purple/50 transition-colors shadow-inner">
-      <User class="w-4 h-4 text-white/50 group-hover:text-white transition-colors" />
-      <div class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#070514] shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
+<!-- Floating Operator Badge (Desktop) -->
+<div class="fixed bottom-6 left-6 z-[100] hidden md:block">
+  <div class="relative flex items-center gap-2 p-1.5 rounded-full border border-goclaw-neon-purple/30 bg-[#070514]/80 backdrop-blur-3xl transition-all duration-500 group overflow-hidden shadow-[0_0_20px_rgba(217,70,239,0.15)] hover:shadow-[0_0_30px_rgba(217,70,239,0.3)] hover:border-goclaw-neon-purple/60 hover:bg-black/90">
+    <div class="relative flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-br from-goclaw-neon-purple/20 to-transparent border border-goclaw-neon-purple/40 group-hover:border-goclaw-neon-cyan transition-colors shadow-inner">
+      <User class="w-5 h-5 text-goclaw-neon-purple group-hover:text-goclaw-neon-cyan transition-colors" />
+      <div class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#070514] shadow-[0_0_10px_rgba(52,211,153,0.8)]"></div>
     </div>
     
     <!-- Revealing text on hover of the operator badge -->
-    <div class="flex flex-col items-start overflow-hidden w-0 opacity-0 group-hover:w-auto group-hover:opacity-100 group-hover:pr-4 transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]">
-      <span class="text-[12px] font-bold text-white whitespace-nowrap">operator_123</span>
-      <span class="text-[9px] text-goclaw-neon-purple font-mono tracking-widest uppercase whitespace-nowrap">AUTH: ROOT</span>
+    <div class="flex flex-col items-start overflow-hidden w-0 opacity-0 group-hover:w-auto group-hover:opacity-100 group-hover:pl-2 group-hover:pr-4 transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]">
+      <span class="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">{authState.userId || 'SYSTEM_OP'}</span>
+      <span class="text-[9px] text-goclaw-neon-cyan font-mono tracking-widest uppercase whitespace-nowrap">AUTH: {authState.tenantName || (authState.isOwner ? 'ROOT' : 'GUEST')}</span>
     </div>
 
-    <!-- Terminate Session Button (Appears inside the expanding pill) -->
-    <div class="w-0 opacity-0 overflow-hidden group-hover:w-10 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
-      <div class="p-2 text-white/30 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-all" title="Terminate Session">
+    <!-- Terminate Session Button -->
+    <div class="w-0 opacity-0 overflow-hidden group-hover:w-12 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
+      <button onclick={logout} class="p-2.5 text-white/40 hover:text-red-400 hover:bg-red-500/20 rounded-full transition-all" title="Terminate Session">
         <LogOut size={16} strokeWidth={2.5} />
+      </button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Mobile Overlay Menu -->
+{#if uiState.isMobileMenuOpen}
+  <div class="fixed inset-0 z-[200] bg-black/90 backdrop-blur-xl md:hidden flex flex-col overflow-y-auto overflow-x-hidden animate-in fade-in zoom-in-95 duration-300">
+    <div class="p-6 flex items-center justify-between border-b border-white/10 sticky top-0 bg-black/50 backdrop-blur-md z-10">
+      <div class="flex items-center gap-3">
+        <img src="/goclaw-nix.png" alt="GoClaw" class="w-8 h-8 drop-shadow-[0_0_10px_rgba(217,70,239,0.8)]" />
+        <span class="font-bold text-white tracking-widest uppercase text-xs">Navigation</span>
+      </div>
+      <button onclick={toggleMobileMenu} class="p-2 bg-white/5 rounded-lg border border-white/10 text-white/60 hover:text-white transition-all active:scale-95">
+         <X size={20} />
+      </button>
+    </div>
+    
+    <div class="p-6 space-y-8 flex-1 pb-24">
+      {#each navGroups as group}
+        <div class="space-y-3">
+          <h4 class="text-[10px] font-bold text-goclaw-neon-purple uppercase tracking-[0.2em]">{group.title}</h4>
+          <div class="grid grid-cols-2 gap-3">
+            {#each group.items as item}
+              {@const Icon = item.icon}
+              {@const isActive = wsState.currentPath === item.to || wsState.currentPath.startsWith(item.to + '/')}
+              <a 
+                href={item.to}
+                onclick={toggleMobileMenu}
+                class={`flex flex-col gap-3 p-4 rounded-xl border transition-all ${isActive ? 'bg-goclaw-neon-cyan/10 border-goclaw-neon-cyan/50 shadow-[0_0_15px_rgba(6,182,212,0.2)]' : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'}`}
+              >
+                <Icon size={20} class={isActive ? 'text-goclaw-neon-cyan drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]' : 'text-white/60'} />
+                <span class={`text-[10px] font-bold tracking-wider uppercase leading-tight ${isActive ? 'text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]' : 'text-white/60'}`}>
+                  {item.label}
+                </span>
+              </a>
+            {/each}
+          </div>
+        </div>
+      {/each}
+      
+      <!-- Mobile Profile & Logout Block -->
+      <div class="mt-8 pt-6 border-t border-white/10">
+        <div class="flex items-center justify-between bg-black/60 border border-goclaw-neon-purple/30 p-4 rounded-xl shadow-[inset_0_0_20px_rgba(217,70,239,0.1)]">
+          <div class="flex items-center gap-3">
+             <div class="relative flex items-center justify-center w-10 h-10 rounded-full bg-goclaw-neon-purple/20 border border-goclaw-neon-purple/50">
+               <User class="w-5 h-5 text-goclaw-neon-purple" />
+               <div class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-black"></div>
+             </div>
+             <div class="flex flex-col">
+                <span class="text-xs font-bold text-white">{authState.userId || 'SYSTEM_OP'}</span>
+                <span class="text-[9px] text-goclaw-neon-cyan font-mono tracking-widest uppercase mt-0.5">AUTH: {authState.tenantName || (authState.isOwner ? 'ROOT' : 'GUEST')}</span>
+             </div>
+          </div>
+          <button onclick={logout} class="p-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 active:scale-95 transition-all">
+             <LogOut size={18} />
+          </button>
+        </div>
       </div>
     </div>
-  </button>
-</div>
+  </div>
+{/if}

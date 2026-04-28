@@ -106,6 +106,37 @@ export async function loadRecords(opts?: { agentId?: string; limit?: number; off
     }
 }
 
+function fillTimeSeries(points: any[], fromStr: string, toStr: string, granularity: "hour" | "day") {
+  const fromTime = new Date(fromStr).getTime();
+  const toTime = new Date(toStr).getTime();
+  const filled = [];
+  
+  const step = granularity === "hour" ? 3600000 : 86400000;
+  let curr = fromTime - (fromTime % step);
+  const end = toTime - (toTime % step);
+
+  const pointsMap = new Map();
+  for (const p of points) {
+    const pt = new Date(p.bucket_time).getTime();
+    pointsMap.set(pt - (pt % step), p);
+  }
+  
+  while (curr <= end) {
+    if (pointsMap.has(curr)) {
+      filled.push(pointsMap.get(curr));
+    } else {
+      filled.push({
+        bucket_time: new Date(curr).toISOString(),
+        request_count: 0, input_tokens: 0, output_tokens: 0,
+        total_cost: 0, error_count: 0, llm_call_count: 0,
+        tool_call_count: 0, avg_duration_ms: 0
+      });
+    }
+    curr += step;
+  }
+  return filled;
+}
+
 export async function refreshUsage() {
     usageState.loading = true;
     try {
@@ -120,7 +151,7 @@ export async function refreshUsage() {
             http.get<any>("/v1/usage/summary", buildParams(filters, { period: filters.period }))
         ]);
 
-        usageState.timeseries = tsRes.points || [];
+        usageState.timeseries = fillTimeSeries(tsRes.points || [], filters.from, filters.to, filters.granularity);
         usageState.providerBreakdown = providerRes.rows || [];
         usageState.modelBreakdown = modelRes.rows || [];
         usageState.channelBreakdown = channelRes.rows || [];

@@ -3,6 +3,7 @@
   import { Activity, Terminal } from "lucide-svelte";
   import { _ } from "svelte-i18n";
   import { formatDate } from "$lib/format";
+  import NexusCard from "../shared/NexusCard.svelte";
 
   type Props = {
     traces: any[];
@@ -18,29 +19,23 @@
   }
 </script>
 
-<div class="relative overflow-hidden bg-[#030014]/40 backdrop-blur-3xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-3xl group flex flex-col h-full">
-  
-  <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none opacity-20"></div>
-
-  <div class="relative z-10 flex items-center justify-between p-5 md:p-6 border-b border-white/5">
-    <div class="flex items-center gap-3">
-      <div class="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20">
-        <Activity class="h-5 w-5 text-purple-400 animate-pulse" />
-      </div>
-      <div>
-        <h3 class="text-sm font-bold uppercase tracking-[0.2em] text-white">{$_('overview.recentRequests.title', { default: "Intercept Matrix" })}</h3>
-        <p class="text-[10px] text-white/40 font-mono uppercase tracking-widest mt-0.5">Live Trace Logs</p>
-      </div>
-    </div>
+<NexusCard
+  title={$_('overview.recentRequests.title', { default: "Intercept Matrix" })}
+  subtitle="Live Trace Logs"
+  icon={Activity}
+  iconColorClass="text-purple-400"
+  iconBgClass="bg-purple-500/10 border-purple-500/20"
+>
+  {#snippet headerActions()}
     {#if traces.length > 0}
       <a href="/traces" class="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs text-white/70 hover:text-white transition-all flex items-center gap-2 group/btn">
         <span class="font-bold uppercase tracking-wider">View Log</span>
         <ArrowRight class="h-3 w-3 group-hover/btn:translate-x-1 transition-transform" />
       </a>
     {/if}
-  </div>
+  {/snippet}
 
-  <div class="relative z-10 flex-1 p-5 md:p-6 overflow-x-auto">
+  <div class="overflow-x-auto">
     {#if traces.length === 0}
       <div class="flex flex-col items-center justify-center h-full py-8 opacity-50">
         <Terminal class="h-8 w-8 text-white/20 mb-3" />
@@ -99,4 +94,4 @@
       </div>
     {/if}
   </div>
-</div>
+</NexusCard>

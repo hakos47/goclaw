@@ -19,7 +19,7 @@
   let isPositive = $derived(trend && trend > 0);
 </script>
 
-<div class="relative p-6 group transition-all duration-700 hover:-translate-y-1.5 isolate overflow-hidden bg-[#030014]/60 backdrop-blur-2xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-2xl h-full flex flex-col justify-between min-h-[160px]">
+<div class="relative p-6 group transition-all duration-700 hover:-translate-y-1.5 isolate overflow-hidden bg-black/40 backdrop-blur-3xl border border-[#d946ef]/20 shadow-[0_0_30px_rgba(217,70,239,0.1),inset_0_1px_1px_rgba(255,255,255,0.1)] rounded-2xl h-full flex flex-col justify-between min-h-[160px]">
   
   <!-- Cybernetic Corner Accents -->
   <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white/20 rounded-tl-xl opacity-50 group-hover:border-goclaw-neon-purple group-hover:opacity-100 transition-colors duration-500"></div>

@@ -135,7 +135,7 @@
           <Login />
       {:else}
           <Topbar onOpenSettings={() => showSettings = true} />
-          <main class="flex-1 flex flex-col overflow-hidden relative">
+          <main class="flex-1 flex flex-col overflow-hidden relative pt-[90px]">
               {#if wsState.currentPath === '/overview' || wsState.currentPath === '/'}
                 <Overview />
               {:else if wsState.currentPath.startsWith('/sessions')}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Database, Users } from "lucide-svelte";
   import { _ } from "svelte-i18n";
+  import NexusCard from "../shared/NexusCard.svelte";
 
   type Props = {
     quota: any;
@@ -45,29 +46,23 @@
   </div>
 {/snippet}
 
-<div class="relative overflow-hidden bg-[#030014]/40 backdrop-blur-3xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-3xl group flex flex-col h-full">
-  
-  <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:10px_10px] pointer-events-none opacity-20"></div>
-
-  <div class="relative z-10 flex items-center justify-between p-5 md:p-6 border-b border-white/5">
-    <div class="flex items-center gap-3">
-      <div class="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-        <Database class="h-5 w-5 text-emerald-400" />
-      </div>
-      <div>
-        <h3 class="text-sm font-bold uppercase tracking-[0.2em] text-white">{$_('overview.quotaUsage.title', { default: "Consumption Cores" })}</h3>
-        <p class="text-[10px] text-white/40 font-mono uppercase tracking-widest mt-0.5">Quota Utilization</p>
-      </div>
-    </div>
+<NexusCard
+  title={$_('overview.quotaUsage.title', { default: "Consumption Cores" })}
+  subtitle="Quota Utilization"
+  icon={Database}
+  iconColorClass="text-emerald-400"
+  iconBgClass="bg-emerald-500/10 border-emerald-500/20"
+>
+  {#snippet headerActions()}
     <div class={`px-3 py-1 bg-black/50 border rounded-lg shadow-inner flex items-center gap-2 ${enabled ? 'border-emerald-500/30' : 'border-white/10'}`}>
       <div class={`w-1.5 h-1.5 rounded-full ${enabled ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse' : 'bg-white/30'}`}></div>
       <span class={`text-[10px] font-bold uppercase tracking-wider ${enabled ? 'text-emerald-400' : 'text-white/40'}`}>
         {enabled ? $_('common.enabled', { default: "Online" }) : $_('common.disabled', { default: "Offline" })}
       </span>
     </div>
-  </div>
+  {/snippet}
 
-  <div class="relative z-10 flex-1 p-5 md:p-6 overflow-x-auto">
+  <div class="overflow-x-auto">
     <div class="flex flex-col gap-4 min-w-[600px]">
       
       <!-- Headers -->
@@ -100,4 +95,4 @@
       
     </div>
   </div>
-</div>
+</NexusCard>

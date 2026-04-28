@@ -183,10 +183,10 @@
 
 {#if open}
   <div 
-    class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-500"
+    class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-3xl p-4 animate-in fade-in duration-500"
     onclick={handleBackdropClick}
   >
-    <div class="glass-panel w-full max-w-4xl max-h-[95vh] flex flex-col shadow-[0_0_100px_rgba(0,0,0,1)] border-white/10 overflow-hidden animate-in zoom-in-95 duration-300">
+    <div class="glass-panel w-full max-w-4xl max-h-[95vh] flex flex-col shadow-[0_0_100px_rgba(217,70,239,0.3)] border-[#d946ef]/20 overflow-hidden animate-in zoom-in-95 duration-300">
       
       <!-- Header -->
       <div class="flex items-center justify-between p-6 border-b border-white/5 bg-white/[0.02]">
@@ -205,7 +205,7 @@
       </div>
 
       <!-- Content -->
-      <div class="flex-1 overflow-y-auto p-6 space-y-12 custom-scrollbar bg-[#050505]/60">
+      <div class="flex-1 overflow-y-auto p-6 space-y-12 custom-scrollbar bg-black/40">
         {#if loading}
           <div class="py-32 flex flex-col items-center justify-center space-y-6">
              <div class="relative">

@@ -12,19 +12,18 @@
     thickness?: number;
   };
 
-  let { data, title, size = 180, thickness = 25 }: Props = $props();
+  let { data, title, size = 180, thickness = 6 }: Props = $props();
 
   let total = $derived(data.reduce((sum, item) => sum + item.value, 0) || 1);
-  let radius = $derived(size / 2 - 10);
+  let radius = $derived(size / 2 - 12);
   let circumference = $derived(2 * Math.PI * radius);
 
-  // Default NIX colors if none provided
   const colors = [
-    "var(--color-goclaw-neon-purple)",
-    "var(--color-goclaw-neon-cyan)",
-    "var(--color-goclaw-neon-magenta)",
-    "var(--color-emerald-500)",
-    "var(--color-amber-500)"
+    "#d946ef", // neon purple
+    "#06b6d4", // neon cyan
+    "#ec4899", // neon pink
+    "#8b5cf6", // violet
+    "#3b82f6"  // blue
   ];
 
   let slices = $derived.by(() => {
@@ -45,15 +44,15 @@
 </script>
 
 <div class="flex flex-col items-center justify-center p-4">
-  <div class="relative" style="width: {size}px; height: {size}px;">
-    <svg width={size} height={size} viewBox="0 0 {size} {size}" class="rotate-[-90deg]">
+  <div class="relative flex items-center justify-center" style="width: {size}px; height: {size}px;">
+    <svg width={size} height={size} viewBox="0 0 {size} {size}" class="rotate-[-90deg] overflow-visible">
       <!-- Background Track -->
       <circle
         cx={size / 2}
         cy={size / 2}
         r={radius}
         fill="transparent"
-        stroke="rgba(255,255,255,0.05)"
+        stroke="rgba(255,255,255,0.03)"
         stroke-width={thickness}
       />
       
@@ -68,11 +67,12 @@
           stroke-dasharray={slice.dashArray}
           stroke-dashoffset={slice.offset}
           stroke-linecap="round"
-          class="transition-all duration-1000 ease-out hover:opacity-80"
-        />
+          class="transition-all duration-1000 ease-out hover:opacity-100 opacity-90 cursor-crosshair hover:stroke-width-[8px]"
+        >
+          <title>{slice.label}: {slice.value}</title>
+        </circle>
       {/each}
     </svg>
-
     <!-- Center Content -->
     <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
       <span class="text-2xl font-mono font-bold text-white tracking-tighter">{total >= 1000 ? (total/1000).toFixed(1) + 'K' : total}</span>

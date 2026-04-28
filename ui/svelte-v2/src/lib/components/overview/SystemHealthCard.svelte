@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Timer, Monitor, Database, Wrench, Radio, Users, CheckCircle2, XCircle, Minus, Tag } from "lucide-svelte";
   import { _ } from "svelte-i18n";
+  import NexusCard from "../shared/NexusCard.svelte";
 
   type Props = {
     health: any;
@@ -23,43 +24,36 @@
   }
 </script>
 
-<div class="relative overflow-hidden bg-[#030014]/40 backdrop-blur-3xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-3xl group">
-  
-  <div class="absolute inset-0 bg-[linear-gradient(45deg,rgba(6,182,212,0.02)_25%,transparent_25%,transparent_50%,rgba(6,182,212,0.02)_50%,rgba(6,182,212,0.02)_75%,transparent_75%,transparent)] bg-[length:20px_20px] pointer-events-none opacity-50"></div>
-  
-  <div class="relative z-10 flex flex-col md:flex-row border-b border-white/5">
-    <div class="flex-1 p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="p-2 rounded-xl bg-goclaw-neon-cyan/10 border border-goclaw-neon-cyan/20">
-          <Monitor class="h-5 w-5 text-goclaw-neon-cyan animate-pulse-slow" />
+<NexusCard
+  title={$_('overview.systemHealth.title', { default: "System Health Matrix" })}
+  subtitle="Core Diagnostics"
+  icon={Monitor}
+  iconColorClass="text-goclaw-neon-cyan"
+  iconBgClass="bg-goclaw-neon-cyan/10 border-goclaw-neon-cyan/20"
+  pattern="diagonal"
+  noPadding={true}
+>
+  {#snippet headerActions()}
+    {#if health?.version}
+      <div class="flex items-center gap-3 px-3 py-1.5 bg-black/40 border border-white/5 rounded-lg shadow-inner">
+        <div class="flex items-center gap-1.5 text-xs text-white/50 font-mono">
+          <Tag class="h-3 w-3" />
+          <span class="text-white/80">{health.version}</span>
         </div>
-        <div>
-          <h3 class="text-sm font-bold uppercase tracking-[0.2em] text-white">{$_('overview.systemHealth.title', { default: "System Health Matrix" })}</h3>
-          <p class="text-[10px] text-white/40 font-mono uppercase tracking-widest mt-0.5">Core Diagnostics</p>
-        </div>
+        {#if health.updateAvailable === false}
+          <div class="w-[1px] h-3 bg-white/10"></div>
+          <span class="flex items-center gap-1 text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
+            <CheckCircle2 class="h-3 w-3" /> Up to date
+          </span>
+        {:else if health.updateAvailable && health.latestVersion}
+          <div class="w-[1px] h-3 bg-white/10"></div>
+          <span class="flex items-center gap-1 text-[10px] text-amber-400 font-bold uppercase tracking-wider">
+            {health.latestVersion} Available
+          </span>
+        {/if}
       </div>
-
-      {#if health?.version}
-        <div class="flex items-center gap-3 px-3 py-1.5 bg-black/40 border border-white/5 rounded-lg shadow-inner">
-          <div class="flex items-center gap-1.5 text-xs text-white/50 font-mono">
-            <Tag class="h-3 w-3" />
-            <span class="text-white/80">{health.version}</span>
-          </div>
-          {#if health.updateAvailable === false}
-            <div class="w-[1px] h-3 bg-white/10"></div>
-            <span class="flex items-center gap-1 text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
-              <CheckCircle2 class="h-3 w-3" /> Up to date
-            </span>
-          {:else if health.updateAvailable && health.latestVersion}
-            <div class="w-[1px] h-3 bg-white/10"></div>
-            <span class="flex items-center gap-1 text-[10px] text-amber-400 font-bold uppercase tracking-wider">
-              {health.latestVersion} Available
-            </span>
-          {/if}
-        </div>
-      {/if}
-    </div>
-  </div>
+    {/if}
+  {/snippet}
 
   <div class="relative z-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-white/5 border-b border-white/5">
     
@@ -167,4 +161,4 @@
       
     </div>
   </div>
-</div>
+</NexusCard>

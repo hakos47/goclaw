@@ -1,11 +1,9 @@
 <script lang="ts">
   import { 
-    Menu, PanelLeftClose, PanelLeftOpen, Globe, Clock, Settings2, Moon, Sun, 
-    User, Check, Target, LifeBuoy, Briefcase, TrendingUp, LogOut, Building2, 
-    ChevronDown, KeyRound, Info 
+    Globe, Clock, Settings2, User, Check, Building2, 
+    KeyRound, Info, LogOut, Target, LifeBuoy, Briefcase, TrendingUp, Menu
   } from "lucide-svelte";
-  import { globalState, toggleSidebar } from "../state/global.svelte";
-  import { uiState, setTimezone, TIMEZONE_OPTIONS } from "../state/ui.svelte";
+  import { uiState, setTimezone, TIMEZONE_OPTIONS, toggleMobileMenu } from "../state/ui.svelte";
   import { wsState, useWsCall } from "../state/ws.svelte";
   import { authState, logout } from "../state/auth.svelte";
   import { locale, _ } from "svelte-i18n";
@@ -17,9 +15,8 @@
 
   let { onOpenSettings }: Props = $props();
 
-  let langMenuOpen = $state(false);
-  let tzMenuOpen = $state(false);
-  let userMenuOpen = $state(false);
+  let isHovered = $state(false);
+  let activeSubmenu = $state<string | null>(null);
 
   const languages = [
     { code: "en", name: "English" },
@@ -31,12 +28,12 @@
   function setLanguage(code: string) {
     $locale = code;
     localStorage.setItem("goclaw:language", code);
-    langMenuOpen = false;
+    activeSubmenu = null;
   }
 
   function handleSetTimezone(tz: string) {
     setTimezone(tz);
-    tzMenuOpen = false;
+    activeSubmenu = null;
   }
 
   function handleSwitchTenant(slug: string) {
@@ -47,26 +44,8 @@
     window.location.reload();
   }
 
-  // Close menus on click outside
-  onMount(() => {
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (langMenuOpen && !target.closest('.lang-dropdown')) {
-        langMenuOpen = false;
-      }
-      if (tzMenuOpen && !target.closest('.tz-dropdown')) {
-        tzMenuOpen = false;
-      }
-      if (userMenuOpen && !target.closest('.user-dropdown')) {
-        userMenuOpen = false;
-      }
-    };
-    window.addEventListener('click', handleClick);
-    return () => window.removeEventListener('click', handleClick);
-  });
-
   let currentLangName = $derived(languages.find(l => l.code === $locale)?.name || "English");
-  let currentTzLabel = $derived(TIMEZONE_OPTIONS.find(t => t.value === uiState.timezone)?.label || "Auto (Local)");
+  let currentTzLabel = $derived(TIMEZONE_OPTIONS.find(t => t.value === uiState.timezone)?.label || "Auto");
   
   let tenantLabel = $derived(authState.tenantName || "");
   let isMultiTenant = $derived(authState.availableTenants.length > 1 || authState.isOwner);
@@ -94,213 +73,210 @@
     { name: $_('sidebar.nav.sessionsOps', { default: "Ops Operations" }), count: summary.ops ?? 0, type: "ops", icon: Briefcase, color: "text-orange-500" },
     { name: $_('sidebar.nav.sessionsEvolution', { default: "Agent Evolution" }), count: summary.evolution ?? 0, type: "evolution", icon: TrendingUp, color: "text-goclaw-neon-magenta" }
   ]);
+
+  let topbarItems = $derived([
+    { id: 'settings', icon: Settings2, label: $_('topbar.systemSettings', { default: 'System Settings' }), action: onOpenSettings, color: 'text-emerald-400' },
+    { id: 'lang', icon: Globe, label: currentLangName, action: () => activeSubmenu = activeSubmenu === 'lang' ? null : 'lang', color: 'text-blue-400' },
+    { id: 'tz', icon: Clock, label: currentTzLabel, action: () => activeSubmenu = activeSubmenu === 'tz' ? null : 'tz', color: 'text-amber-400' },
+    ...(isMultiTenant ? [{ id: 'tenant', icon: Building2, label: tenantLabel || 'Tenants', action: () => activeSubmenu = activeSubmenu === 'tenant' ? null : 'tenant', color: 'text-goclaw-neon-cyan' }] : []),
+    { id: 'apikeys', icon: KeyRound, label: 'API Keys', action: () => window.location.href = '/api-keys', color: 'text-goclaw-neon-purple' },
+    { id: 'logout', icon: LogOut, label: 'Logout', action: logout, color: 'text-red-400' }
+  ]);
+
+  function getRadialStyle(index: number, total: number, isHovered: boolean) {
+    let R = 140; // Spread radius
+    let startAngle = 270; // Down
+    let endAngle = 180; // Left
+    let angleSpan = startAngle - endAngle;
+    let angleDeg = startAngle - (index / Math.max(1, total - 1)) * angleSpan;
+    let angleRad = angleDeg * (Math.PI / 180);
+
+    let currentR = isHovered ? R : 0;
+    let X = currentR * Math.cos(angleRad);
+    let Y = -currentR * Math.sin(angleRad);
+
+    return `transform: translate(calc(-50% + ${X}px), calc(-50% + ${Y}px)) scale(${isHovered ? 1 : 0.3}); opacity: ${isHovered ? 1 : 0}; transition-delay: ${isHovered ? index * 30 : 0}ms; pointer-events: ${isHovered ? 'auto' : 'none'};`;
+  }
+
 </script>
 
-<header class="flex h-16 items-center justify-between border-b border-white/5 bg-[#030014]/50 backdrop-blur-2xl px-6 relative z-40 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
-  <div class="flex items-center gap-4 pl-32">
-    {#if wsState.currentPath.startsWith('/sessions')}
-      <!-- Contextual Sessions HUD -->
-      <div class="hidden sm:flex items-center gap-2 animate-in slide-in-from-left-4 fade-in duration-300">
-        {#each sessionCategories as cat}
-          {@const isActive = wsState.currentSearch?.includes(`category=${cat.type}`)}
-          {@const SubIcon = cat.icon}
-          <a 
-            href={`/sessions?category=${cat.type}`}
-            class={`relative flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all duration-300 group overflow-hidden ${isActive ? 'bg-white/10 border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'bg-black/20 border-transparent hover:bg-white/[0.05]'}`}
-          >
-            {#if isActive}
-              <!-- Bottom glow line -->
-              <div class={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-[2px] rounded-t-full shadow-[0_0_10px_currentColor] ${cat.color}`}></div>
-              <div class={`absolute inset-0 opacity-20 blur-md ${cat.color} bg-current`}></div>
-            {/if}
-
-            <SubIcon size={14} class={`relative z-10 transition-colors ${isActive ? cat.color : 'text-white/40 group-hover:text-white/80'}`} />
-            
-            <span class={`relative z-10 text-[11px] font-bold tracking-wider uppercase transition-colors ${isActive ? 'text-white' : 'text-white/50 group-hover:text-white/90'}`}>
-              {cat.name}
-            </span>
-            
-            <div class={`relative z-10 ml-1 px-1.5 py-0.5 rounded-md bg-black/60 border border-white/10 shadow-inner flex items-center justify-center min-w-[20px]`}>
-              <span class={`text-[9px] font-mono font-bold ${isActive ? cat.color : 'text-white/60'}`}>{cat.count}</span>
-            </div>
-          </a>
-        {/each}
-      </div>
-    {:else}
-      <!-- Global Breadcrumb -->
-      <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 text-[10px] font-mono uppercase tracking-widest text-white/40">
-        <div class="w-1.5 h-1.5 rounded-full bg-goclaw-neon-purple shadow-[0_0_8px_rgba(217,70,239,0.8)] animate-pulse-slow"></div>
-        System Normal (Locale: {$locale})
-      </div>
-    {/if}
-  </div>
-
-  <div class="flex items-center gap-2 sm:gap-3">
-    <!-- Utility Group (Pill Container) -->
-    <div class="flex items-center p-1 rounded-2xl bg-[#0a0a0a]/50 border border-white/5 shadow-inner">
-      
-      <!-- Language Dropdown -->
-      <div class="relative lang-dropdown">
-        <button 
-          onclick={() => langMenuOpen = !langMenuOpen}
-          class="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold tracking-wide text-white/50 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
+<!-- Contextual HUD / Breadcrumb (Floating Top Left) -->
+<div class="fixed top-6 left-6 z-[60] flex items-center gap-4">
+  <!-- Mobile Menu Toggle -->
+  <button 
+    onclick={toggleMobileMenu}
+    class="md:hidden flex items-center justify-center w-10 h-10 rounded-xl bg-black/60 backdrop-blur-xl border border-[#d946ef]/30 shadow-[0_0_15px_rgba(217,70,239,0.2)] text-white/80 hover:text-white transition-all active:scale-95"
+  >
+    <Menu size={20} class="text-goclaw-neon-purple drop-shadow-[0_0_8px_rgba(217,70,239,0.8)]" />
+  </button>
+  {#if wsState.currentPath.startsWith('/sessions')}
+    <!-- Contextual Sessions HUD -->
+    <div class="hidden sm:flex items-center gap-2 animate-in slide-in-from-left-4 fade-in duration-300">
+      {#each sessionCategories as cat}
+        {@const isActive = wsState.currentSearch?.includes(`category=${cat.type}`)}
+        {@const SubIcon = cat.icon}
+        <a 
+          href={`/sessions?category=${cat.type}`}
+          class={`relative flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all duration-300 group overflow-hidden ${isActive ? 'bg-black/80 border-[#d946ef]/50 shadow-[0_0_15px_rgba(217,70,239,0.2)]' : 'bg-black/40 border-[#d946ef]/10 hover:bg-black/60 hover:border-[#d946ef]/30'}`}
         >
-          <Globe class="h-3.5 w-3.5" />
-          <span class="hidden sm:inline">{currentLangName}</span>
-        </button>
-
-        {#if langMenuOpen}
-          <div class="absolute right-0 mt-2 w-48 rounded-2xl bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.8)] p-1.5 z-50 animate-in fade-in zoom-in-95 duration-200">
-            <div class="px-3 py-2 text-[9px] font-bold text-white/30 uppercase tracking-widest border-b border-white/5 mb-1">
-              {$_('topbar.language', { default: 'Language' })}
-            </div>
-            {#each languages as lang}
-              <button
-                onclick={() => setLanguage(lang.code)}
-                class="w-full flex items-center justify-between px-3 py-2 text-sm rounded-xl hover:bg-white/5 transition-colors group"
-              >
-                <span class={lang.code === $locale ? "text-goclaw-neon-purple font-bold" : "text-white/70 group-hover:text-white font-medium"}>
-                  {lang.name}
-                </span>
-                {#if lang.code === $locale}
-                  <Check class="h-4 w-4 text-goclaw-neon-purple" />
-                {/if}
-              </button>
-            {/each}
-          </div>
-        {/if}
-      </div>
-
-      <div class="w-[1px] h-4 bg-white/10 mx-1"></div>
-
-      <!-- Timezone Dropdown -->
-      <div class="relative tz-dropdown">
-        <button 
-          onclick={() => tzMenuOpen = !tzMenuOpen}
-          class="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold tracking-wide text-white/50 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
-        >
-          <Clock class="h-3.5 w-3.5" />
-          <span class="hidden sm:inline">{currentTzLabel}</span>
-        </button>
-
-        {#if tzMenuOpen}
-          <div class="absolute right-0 mt-2 w-56 rounded-2xl bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.8)] p-1.5 z-50 animate-in fade-in zoom-in-95 duration-200 max-h-80 overflow-y-auto scroller-no-scrollbar">
-            <div class="px-3 py-2 text-[9px] font-bold text-white/30 uppercase tracking-widest border-b border-white/5 mb-1 sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md z-10">
-              {$_('topbar.timezone', { default: 'Timezone' })}
-            </div>
-            {#each TIMEZONE_OPTIONS as tz}
-              <button
-                onclick={() => handleSetTimezone(tz.value)}
-                class="w-full flex items-center justify-between px-3 py-2.5 text-xs rounded-xl hover:bg-white/5 transition-colors group text-left"
-              >
-                <span class={tz.value === uiState.timezone ? "text-goclaw-neon-cyan font-bold" : "text-white/70 group-hover:text-white font-medium"}>
-                  {tz.label}
-                </span>
-                {#if tz.value === uiState.timezone}
-                  <Check class="h-4 w-4 text-goclaw-neon-cyan" />
-                {/if}
-              </button>
-            {/each}
-          </div>
-        {/if}
-      </div>
-
-      <div class="w-[1px] h-4 bg-white/10 mx-1"></div>
-
-      <!-- Settings Button -->
-      <button 
-        onclick={onOpenSettings}
-        class="relative cursor-pointer rounded-xl p-2 text-white/50 hover:bg-white/10 hover:text-white transition-all"
-        title={$_('topbar.systemSettings', { default: 'System Settings' })}
-      >
-        <Settings2 class="h-4 w-4" />
-        <span class="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.8)]"></span>
-      </button>
-    </div>
-
-    <!-- User Menu Identity -->
-    <div class="relative user-dropdown">
-      <button 
-        onclick={() => userMenuOpen = !userMenuOpen}
-        class="flex items-center gap-3 rounded-2xl p-1.5 pr-4 bg-[#050505]/60 border border-white/5 hover:border-white/10 hover:bg-[#0a0a0a] transition-all ml-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] cursor-pointer"
-      >
-        <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-goclaw-neon-purple/10 border border-goclaw-neon-purple/30 text-goclaw-neon-purple shadow-[0_0_15px_rgba(217,70,239,0.2)]">
-          <User class="h-4 w-4" />
-        </div>
-        <div class="hidden sm:flex flex-col items-start leading-tight">
-          <span class="text-xs font-bold tracking-wide text-white">{authState.userId || 'system'}</span>
-          <span class="text-[9px] font-mono text-goclaw-neon-cyan uppercase tracking-widest">
-            {authState.tenantName || (authState.isOwner ? 'Master' : 'Guest')}
-          </span>
-        </div>
-        <ChevronDown class="h-3 w-3 opacity-30 group-hover:opacity-100 transition-opacity" />
-      </button>
-
-      {#if userMenuOpen}
-        <div class="absolute right-0 mt-3 w-64 rounded-2xl bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.9)] p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-          <!-- Tenant Header -->
-          {#if tenantLabel}
-            <div class="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-widest border-b border-white/5 mb-2">
-              {tenantLabel}
-            </div>
+          {#if isActive}
+            <div class={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-[2px] rounded-t-full shadow-[0_0_10px_currentColor] ${cat.color}`}></div>
+            <div class={`absolute inset-0 opacity-10 blur-md ${cat.color} bg-current`}></div>
           {/if}
 
-          <!-- Tenant Switcher -->
-          {#if isMultiTenant}
-            <div class="px-3 py-1 text-[9px] font-bold text-goclaw-neon-purple uppercase tracking-widest mb-1">
-              {$_('tenants.currentTenant', { default: 'Switch Tenant' })}
+          <SubIcon size={14} class={`relative z-10 transition-colors ${isActive ? cat.color : 'text-white/40 group-hover:text-white/80'}`} />
+          
+          <span class={`relative z-10 text-[11px] font-bold tracking-wider uppercase transition-colors ${isActive ? 'text-white' : 'text-white/50 group-hover:text-white/90'}`}>
+            {cat.name}
+          </span>
+          
+          <div class={`relative z-10 ml-1 px-1.5 py-0.5 rounded-md bg-black/60 border border-white/10 shadow-inner flex items-center justify-center min-w-[20px]`}>
+            <span class={`text-[9px] font-mono font-bold ${isActive ? cat.color : 'text-white/60'}`}>{cat.count}</span>
+          </div>
+        </a>
+      {/each}
+    </div>
+  {:else}
+    <!-- Global Breadcrumb -->
+    <div class="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 backdrop-blur-3xl border border-[#d946ef]/20 shadow-[0_0_20px_rgba(217,70,239,0.1)] text-[10px] font-mono uppercase tracking-widest text-white/50">
+      <div class="w-2 h-2 rounded-full bg-goclaw-neon-purple shadow-[0_0_8px_rgba(217,70,239,0.8)] animate-pulse-slow"></div>
+      System Normal <span class="opacity-30 mx-1">|</span> Loc: {$locale} <span class="opacity-30 mx-1">|</span> Tz: {currentTzLabel}
+    </div>
+  {/if}
+</div>
+
+<!-- Radial User Orb (Top Right) -->
+<div 
+  class="fixed top-6 right-6 z-[100] flex items-center justify-center w-16 h-16 group/userorb"
+  onmouseenter={() => isHovered = true}
+  onmouseleave={() => { isHovered = false; activeSubmenu = null; }}
+>
+  <!-- Invisible hover bridge -->
+  {#if isHovered}
+    <div class="absolute top-0 right-0 w-[300px] h-[300px] rounded-bl-full bg-transparent z-0"></div>
+  {/if}
+
+  <!-- Main Orb Button -->
+  <button class="relative flex items-center justify-center w-14 h-14 rounded-full border border-[#d946ef]/30 bg-black/80 backdrop-blur-3xl z-50 transition-all duration-500 shadow-[0_0_20px_rgba(217,70,239,0.2)] group-hover/userorb:border-[#d946ef] group-hover/userorb:shadow-[0_0_30px_rgba(217,70,239,0.4)] group-hover/userorb:scale-110">
+    <div class="absolute inset-0 bg-goclaw-neon-purple/20 blur-[15px] animate-pulse-slow rounded-full opacity-0 group-hover/userorb:opacity-100 transition-opacity duration-500"></div>
+    <User class="w-6 h-6 text-goclaw-neon-purple relative z-10 transition-transform duration-500 group-hover/userorb:scale-110" />
+    <div class="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-black shadow-[0_0_10px_rgba(16,185,129,0.8)] z-20"></div>
+  </button>
+
+  <!-- Reveal Auth Info on Hover -->
+  <div class="absolute right-20 top-1/2 -translate-y-1/2 flex flex-col items-end opacity-0 group-hover/userorb:opacity-100 group-hover/userorb:-translate-x-2 transition-all duration-500 pointer-events-none">
+    <span class="text-[14px] font-black text-white uppercase tracking-wider drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">{authState.userId || 'system'}</span>
+    <span class="text-[10px] font-mono text-goclaw-neon-cyan uppercase tracking-widest bg-black/60 px-2 py-0.5 rounded-full border border-[#06b6d4]/30 mt-1">{authState.tenantName || (authState.isOwner ? 'Master' : 'Guest')}</span>
+  </div>
+
+  <!-- Radial Menu Items -->
+  <div class={`absolute top-1/2 left-1/2 w-0 h-0 transition-all duration-500 z-20 ${isHovered ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+    {#each topbarItems as item, index}
+      {@const Icon = item.icon}
+      {@const isActive = activeSubmenu === item.id}
+      <button 
+        onclick={item.action}
+        style={getRadialStyle(index, topbarItems.length, isHovered)}
+        class={`absolute top-0 left-0 flex items-center justify-center w-12 h-12 rounded-full border bg-black/80 backdrop-blur-xl transition-all duration-300 z-30 shadow-[0_0_15px_rgba(0,0,0,0.8)] ${isActive ? 'border-[#d946ef] scale-110 shadow-[0_0_20px_rgba(217,70,239,0.3)]' : 'border-white/10 hover:border-[#d946ef]/50 hover:scale-110'}`}
+        title={item.label}
+      >
+        <Icon size={20} class={`transition-colors duration-300 ${isActive ? 'text-goclaw-neon-purple drop-shadow-[0_0_10px_rgba(217,70,239,0.8)]' : `text-white/50 hover:text-white ${item.color.replace('text-', 'hover:text-')}`}`} />
+        
+        <!-- Tooltip for Radial Item -->
+        {#if !isActive && !activeSubmenu}
+          <div class="absolute top-full mt-2 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50">
+            <div class="px-2 py-1 rounded bg-black/80 border border-white/10 text-[9px] font-bold text-white uppercase tracking-widest whitespace-nowrap">
+              {item.label}
             </div>
-            <div class="space-y-1 mb-2">
-              {#each authState.availableTenants as tenant}
+          </div>
+        {/if}
+      </button>
+
+      <!-- Submenus -->
+      {#if isActive && isHovered}
+        <!-- Language Submenu -->
+        {#if item.id === 'lang'}
+          <div 
+            style={getRadialStyle(index, topbarItems.length, true)}
+            class="absolute top-14 left-0 -translate-x-1/2 w-48 rounded-2xl bg-black/90 backdrop-blur-3xl border border-[#d946ef]/30 shadow-[0_10px_40px_rgba(217,70,239,0.2)] p-2 z-[100] animate-in fade-in zoom-in-95"
+          >
+            <div class="px-3 py-2 text-[9px] font-bold text-white/30 uppercase tracking-widest border-b border-white/5 mb-2">
+              {$_('topbar.language', { default: 'Language' })}
+            </div>
+            <div class="space-y-1">
+              {#each languages as lang}
                 <button
-                  onclick={() => handleSwitchTenant(tenant.slug)}
-                  class="w-full flex items-center gap-3 px-3 py-2 text-xs rounded-xl hover:bg-white/5 transition-all group"
+                  onclick={(e) => { e.stopPropagation(); setLanguage(lang.code); }}
+                  class="w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl hover:bg-white/10 transition-colors group"
                 >
-                  <Building2 class="h-3.5 w-3.5 text-white/30 group-hover:text-goclaw-neon-purple" />
-                  <span class="flex-1 truncate text-left text-white/70 group-hover:text-white">
-                    {tenant.name}
+                  <span class={lang.code === $locale ? "text-goclaw-neon-purple font-bold" : "text-white/70 group-hover:text-white font-medium"}>
+                    {lang.name}
                   </span>
-                  {#if tenant.id === authState.tenantId}
+                  {#if lang.code === $locale}
                     <Check class="h-3.5 w-3.5 text-goclaw-neon-purple" />
                   {/if}
                 </button>
               {/each}
             </div>
-            <div class="h-[1px] bg-white/5 my-2"></div>
-          {/if}
-
-          <!-- Menu Links -->
-          <div class="space-y-1">
-            {#if isMultiTenant}
-              <a href="/tenants" class="flex items-center gap-3 px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
-                <Building2 class="h-3.5 w-3.5 text-white/30" />
-                <span>{$_('tenants.title', { default: 'Tenants' })}</span>
-              </a>
-            {/if}
-            
-            <a href="/api-keys" class="flex items-center gap-3 px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
-              <KeyRound class="h-3.5 w-3.5 text-white/30" />
-              <span>{$_('topbar.apiKeys', { default: 'API Keys' })}</span>
-            </a>
-
-            <button class="w-full flex items-center gap-3 px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all text-left">
-              <Info class="h-3.5 w-3.5 text-white/30" />
-              <span>{$_('topbar.about.menuItem', { default: 'About' })}</span>
-            </button>
           </div>
+        {/if}
 
-          <div class="h-[1px] bg-white/5 my-2"></div>
-
-          <!-- Logout -->
-          <button
-            onclick={logout}
-            class="w-full flex items-center gap-3 px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all text-left"
+        <!-- Timezone Submenu -->
+        {#if item.id === 'tz'}
+          <div 
+            style={getRadialStyle(index, topbarItems.length, true)}
+            class="absolute top-14 left-0 -translate-x-1/2 w-56 rounded-2xl bg-black/90 backdrop-blur-3xl border border-[#d946ef]/30 shadow-[0_10px_40px_rgba(217,70,239,0.2)] p-2 z-[100] animate-in fade-in zoom-in-95"
           >
-            <LogOut class="h-3.5 w-3.5" />
-            <span>{$_('topbar.logout', { default: 'Logout' })}</span>
-          </button>
-        </div>
+            <div class="px-3 py-2 text-[9px] font-bold text-white/30 uppercase tracking-widest border-b border-white/5 mb-2">
+              {$_('topbar.timezone', { default: 'Timezone' })}
+            </div>
+            <div class="max-h-64 overflow-y-auto custom-scrollbar space-y-1 pr-1">
+              {#each TIMEZONE_OPTIONS as tz}
+                <button
+                  onclick={(e) => { e.stopPropagation(); handleSetTimezone(tz.value); }}
+                  class="w-full flex items-center justify-between px-3 py-2.5 text-[10px] uppercase font-bold tracking-wider rounded-xl hover:bg-white/10 transition-colors group text-left"
+                >
+                  <span class={tz.value === uiState.timezone ? "text-goclaw-neon-cyan" : "text-white/50 group-hover:text-white"}>
+                    {tz.label}
+                  </span>
+                  {#if tz.value === uiState.timezone}
+                    <Check class="h-3.5 w-3.5 text-goclaw-neon-cyan" />
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Tenant Submenu -->
+        {#if item.id === 'tenant'}
+          <div 
+            style={getRadialStyle(index, topbarItems.length, true)}
+            class="absolute top-14 left-0 -translate-x-1/2 w-56 rounded-2xl bg-black/90 backdrop-blur-3xl border border-[#d946ef]/30 shadow-[0_10px_40px_rgba(217,70,239,0.2)] p-2 z-[100] animate-in fade-in zoom-in-95"
+          >
+            <div class="px-3 py-2 text-[9px] font-bold text-goclaw-neon-cyan uppercase tracking-widest border-b border-white/5 mb-2">
+              Switch Tenant
+            </div>
+            <div class="space-y-1">
+              {#each authState.availableTenants as tenant}
+                <button
+                  onclick={(e) => { e.stopPropagation(); handleSwitchTenant(tenant.slug); }}
+                  class="w-full flex items-center gap-3 px-3 py-2 text-xs rounded-xl hover:bg-white/10 transition-all group"
+                >
+                  <Building2 class="h-3.5 w-3.5 text-white/30 group-hover:text-goclaw-neon-cyan" />
+                  <span class="flex-1 truncate text-left font-bold text-white/70 group-hover:text-white uppercase tracking-wider text-[10px]">
+                    {tenant.name}
+                  </span>
+                  {#if tenant.id === authState.tenantId}
+                    <Check class="h-3.5 w-3.5 text-goclaw-neon-cyan" />
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
       {/if}
-    </div>
+
+    {/each}
   </div>
-</header>
+</div>

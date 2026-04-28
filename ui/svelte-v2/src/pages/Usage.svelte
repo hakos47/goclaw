@@ -7,6 +7,7 @@
   import Sparkline from "../lib/components/shared/Sparkline.svelte";
   import DonutChart from "../lib/components/shared/DonutChart.svelte";
   import TimelineChart from "../lib/components/shared/TimelineChart.svelte";
+  import NexusCard from "../lib/components/shared/NexusCard.svelte";
   import { useWsCall } from "../lib/state/ws.svelte";
   import { agentsState, loadAgents } from "./agents/hooks/use-agents.svelte";
   import { providersState, loadProviders } from "../lib/state/providers.svelte";
@@ -83,7 +84,7 @@
 </script>
 
 {#snippet statCard(label, value, sub, trend, spark, icon: any, colorClass = "text-white/50")}
-  <div class="relative p-6 group transition-all duration-700 hover:-translate-y-1.5 isolate overflow-hidden bg-[#030014]/60 backdrop-blur-2xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-2xl h-full flex flex-col justify-between min-h-[160px]">
+  <div class="relative p-6 group transition-all duration-700 hover:-translate-y-1.5 isolate overflow-hidden bg-black/40 backdrop-blur-3xl border border-[#d946ef]/20 shadow-[0_0_30px_rgba(217,70,239,0.1),inset_0_1px_1px_rgba(255,255,255,0.1)] rounded-2xl h-full flex flex-col justify-between min-h-[160px]">
     
     <!-- Cybernetic Corner Accents -->
     <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white/20 rounded-tl-xl opacity-50 group-hover:border-goclaw-neon-purple group-hover:opacity-100 transition-colors duration-500"></div>
@@ -138,7 +139,7 @@
        <ChevronDown class="absolute right-3 top-2.5 h-4 w-4 text-white/30" />
     </div>
     
-    <div class="absolute top-full left-0 right-0 mt-2 bg-[#030014]/95 backdrop-blur-2xl border border-white/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 flex flex-col p-1.5 max-h-[300px] overflow-y-auto">
+    <div class="absolute top-full left-0 right-0 mt-2 bg-black/80 backdrop-blur-3xl border border-[#d946ef]/30 rounded-xl shadow-[0_10px_40px_rgba(217,70,239,0.2)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 flex flex-col p-1.5 max-h-[300px] overflow-y-auto">
       <button 
         onclick={() => onChange(undefined)}
         class="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors"
@@ -161,18 +162,22 @@
 <div class="space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-2 duration-700">
   
   <!-- Filters Bar (Cyber-Tactical) -->
-  <div class="relative rounded-2xl border border-white/5 bg-[#030014]/60 backdrop-blur-3xl p-3 flex flex-wrap items-center justify-between gap-4 shadow-[0_0_30px_rgba(0,0,0,0.5)] z-40">
+  <div class="relative rounded-2xl border border-[#d946ef]/20 bg-black/40 backdrop-blur-3xl p-3 flex flex-wrap items-center justify-between gap-4 shadow-[0_0_30px_rgba(217,70,239,0.1)] z-40">
     <div class="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.02)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.02)_50%,rgba(255,255,255,0.02)_75%,transparent_75%,transparent)] bg-[length:20px_20px] opacity-20 pointer-events-none rounded-2xl"></div>
     <div class="relative z-10 flex items-center gap-6">
        <div class="flex items-center gap-1 pl-2">
          <span class="text-[9px] font-bold text-white/30 uppercase tracking-[0.3em] mr-3">Time Range</span>
-         <div class="flex bg-black/60 rounded-xl p-0.5 border border-white/5 shadow-inner">
+         <div class="inline-flex p-1 rounded-2xl bg-[#030014]/60 backdrop-blur-xl border border-white/5 shadow-inner">
             {#each ['24h', '7d', '30d'] as p}
                 <button 
                     onclick={() => setPeriod(p as any)}
-                    class={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${usageState.filters.period === p ? 'bg-white/10 text-goclaw-neon-cyan shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'text-white/30 hover:text-white/60'}`}
+                    class={`relative flex items-center justify-center px-6 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all duration-300 outline-none ${usageState.filters.period === p ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
                 >
-                    {p}
+                    {#if usageState.filters.period === p}
+                      <div class="absolute inset-0 bg-goclaw-neon-cyan/20 border border-goclaw-neon-cyan/30 rounded-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"></div>
+                      <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[2px] bg-goclaw-neon-cyan shadow-[0_0_8px_rgba(6,182,212,0.8)]"></div>
+                    {/if}
+                    <span class="relative z-10">{p}</span>
                 </button>
             {/each}
          </div>
@@ -260,165 +265,132 @@
   <div class="grid gap-6 lg:grid-cols-1">
     
     <!-- Token Usage Over Time -->
-    <div class="relative overflow-hidden bg-[#030014]/40 backdrop-blur-3xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-3xl group">
-      <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-20"></div>
-      <div class="relative z-10 border-b border-white/5 p-5 md:p-6 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="p-2 rounded-xl bg-goclaw-neon-cyan/10 border border-goclaw-neon-cyan/20">
-            <Layers class="h-5 w-5 text-goclaw-neon-cyan" />
-          </div>
-          <div>
-             <h3 class="text-sm font-bold uppercase tracking-[0.2em] text-white">Token Usage Trajectory</h3>
-             <p class="text-[10px] text-white/40 font-mono uppercase tracking-widest mt-0.5">Time Series Analysis</p>
-          </div>
-        </div>
-      </div>
-      <div class="relative z-10 p-5 md:p-6">
-        <TimelineChart 
-            data={timeseries} 
-            series={[
-                { label: "Cache Read Tokens", key: "cache_read_tokens", color: "var(--color-amber-500)", type: "line" },
-                { label: "Input Tokens", key: "input_tokens", color: "var(--color-goclaw-neon-magenta)", type: "area" },
-                { label: "Output Tokens", key: "output_tokens", color: "var(--color-goclaw-neon-cyan)", type: "line" }
-            ]}
-            height="250px"
-        />
-      </div>
-    </div>
+    <NexusCard
+      title="Token Usage Trajectory"
+      subtitle="Time Series Analysis"
+      icon={Layers}
+      iconColorClass="text-goclaw-neon-cyan"
+      iconBgClass="bg-goclaw-neon-cyan/10 border-goclaw-neon-cyan/20"
+    >
+      <TimelineChart 
+          data={timeseries} 
+          series={[
+              { label: "Cache Read Tokens", key: "cache_read_tokens", color: "var(--color-amber-500)", type: "line" },
+              { label: "Input Tokens", key: "input_tokens", color: "var(--color-goclaw-neon-magenta)", type: "area" },
+              { label: "Output Tokens", key: "output_tokens", color: "var(--color-goclaw-neon-cyan)", type: "line" }
+          ]}
+          height="250px"
+      />
+    </NexusCard>
 
     <!-- Request Volume & Errors -->
-    <div class="relative overflow-hidden bg-[#030014]/40 backdrop-blur-3xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-3xl group">
-      <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-20"></div>
-      <div class="relative z-10 border-b border-white/5 p-5 md:p-6 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="p-2 rounded-xl bg-goclaw-neon-magenta/10 border border-goclaw-neon-magenta/20">
-            <Activity class="h-5 w-5 text-goclaw-neon-magenta" />
-          </div>
-          <div>
-            <h3 class="text-sm font-bold uppercase tracking-[0.2em] text-white">Request Volume & Errors</h3>
-            <p class="text-[10px] text-white/40 font-mono uppercase tracking-widest mt-0.5">Time Series Analysis</p>
-          </div>
-        </div>
-      </div>
-      <div class="relative z-10 p-5 md:p-6">
-        <TimelineChart 
-            data={timeseries} 
-            series={[
-                { label: "Requests", key: "request_count", color: "var(--color-goclaw-neon-magenta)", type: "bar" },
-                { label: "Errors", key: "error_count", color: "var(--color-red-500)", type: "line", yAxis: "right" }
-            ]}
-            height="200px"
-        />
-      </div>
-    </div>
+    <NexusCard
+      title="Request Volume & Errors"
+      subtitle="Time Series Analysis"
+      icon={Activity}
+      iconColorClass="text-goclaw-neon-magenta"
+      iconBgClass="bg-goclaw-neon-magenta/10 border-goclaw-neon-magenta/20"
+    >
+      <TimelineChart 
+          data={timeseries} 
+          series={[
+              { label: "Requests", key: "request_count", color: "var(--color-goclaw-neon-magenta)", type: "bar" },
+              { label: "Errors", key: "error_count", color: "var(--color-red-500)", type: "line", yAxis: "right" }
+          ]}
+          height="200px"
+      />
+    </NexusCard>
 
   </div>
 
   <div class="grid gap-6 lg:grid-cols-3">
     <!-- Distribution Donut Charts -->
-    <div class="relative overflow-hidden bg-[#030014]/40 backdrop-blur-3xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-3xl group">
-      <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-20"></div>
-      <div class="relative z-10 border-b border-white/5 py-5 flex items-center justify-center">
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.3em] text-white/80">Provider Matrix</h3>
-      </div>
-      <div class="relative z-10 p-4">
+    <NexusCard
+      title="Provider Matrix"
+      subtitle="Call Distribution"
+      icon={Layers}
+      iconColorClass="text-emerald-400"
+      iconBgClass="bg-emerald-500/10 border-emerald-500/20"
+    >
+      <div class="flex items-center justify-center h-full">
         <DonutChart data={providerDist} title="Calls" />
       </div>
-    </div>
+    </NexusCard>
 
-    <div class="relative overflow-hidden bg-[#030014]/40 backdrop-blur-3xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-3xl group">
-      <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-20"></div>
-      <div class="relative z-10 border-b border-white/5 py-5 flex items-center justify-center">
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.3em] text-white/80">Model Distribution</h3>
-      </div>
-      <div class="relative z-10 p-4">
+    <NexusCard
+      title="Model Distribution"
+      subtitle="LLM Analysis"
+      icon={Bot}
+      iconColorClass="text-goclaw-neon-purple"
+      iconBgClass="bg-goclaw-neon-purple/10 border-goclaw-neon-purple/20"
+    >
+      <div class="flex items-center justify-center h-full">
         <DonutChart data={modelDist} title="Calls" />
       </div>
-    </div>
+    </NexusCard>
 
-    <div class="relative overflow-hidden bg-[#030014]/40 backdrop-blur-3xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-3xl group">
-      <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-20"></div>
-      <div class="relative z-10 border-b border-white/5 py-5 flex items-center justify-center">
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.3em] text-white/80">Channel Sources</h3>
-      </div>
-      <div class="relative z-10 p-4">
+    <NexusCard
+      title="Channel Sources"
+      subtitle="Ingress Vectors"
+      icon={Radio}
+      iconColorClass="text-goclaw-neon-cyan"
+      iconBgClass="bg-goclaw-neon-cyan/10 border-goclaw-neon-cyan/20"
+    >
+      <div class="flex items-center justify-center h-full">
         <DonutChart data={channelDist} title="Calls" />
       </div>
-    </div>
+    </NexusCard>
   </div>
 
   <div class="grid gap-6 lg:grid-cols-2">
     <!-- Performance Chart -->
-    <div class="relative overflow-hidden bg-[#030014]/40 backdrop-blur-3xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-3xl group">
-      <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-20"></div>
-      <div class="relative z-10 border-b border-white/5 p-5 md:p-6 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="p-2 rounded-xl bg-orange-500/10 border border-orange-500/20">
-            <Clock class="h-5 w-5 text-orange-400" />
-          </div>
-          <div>
-            <h3 class="text-sm font-bold uppercase tracking-[0.2em] text-white">Duration & Performance</h3>
-            <p class="text-[10px] text-white/40 font-mono uppercase tracking-widest mt-0.5">Latency Analysis</p>
-          </div>
-        </div>
-      </div>
-      <div class="relative z-10 p-5 md:p-6">
-        <TimelineChart 
-            data={timeseries} 
-            series={[
-                { label: "Avg Duration", key: "avg_duration_ms", color: "#E87820", type: "bar" },
-                { label: "Error Rate %", key: "error_count", color: "#ef4444", type: "line", yAxis: "right" }
-            ]}
-            height="180px"
-        />
-      </div>
-    </div>
+    <NexusCard
+      title="Duration & Performance"
+      subtitle="Latency Analysis"
+      icon={Clock}
+      iconColorClass="text-orange-400"
+      iconBgClass="bg-orange-500/10 border-orange-500/20"
+    >
+      <TimelineChart 
+          data={timeseries} 
+          series={[
+              { label: "Avg Duration", key: "avg_duration_ms", color: "#E87820", type: "bar" },
+              { label: "Error Rate %", key: "error_count", color: "#ef4444", type: "line", yAxis: "right" }
+          ]}
+          height="180px"
+      />
+    </NexusCard>
 
     <!-- Memory & Knowledge Growth -->
-    <div class="relative overflow-hidden bg-[#030014]/40 backdrop-blur-3xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-3xl group">
-      <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-20"></div>
-      <div class="relative z-10 border-b border-white/5 p-5 md:p-6 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="p-2 rounded-xl bg-amber-400/10 border border-amber-400/20">
-            <Database class="h-5 w-5 text-amber-400" />
-          </div>
-          <div>
-            <h3 class="text-sm font-bold uppercase tracking-[0.2em] text-white">Memory Node Graph Growth</h3>
-            <p class="text-[10px] text-white/40 font-mono uppercase tracking-widest mt-0.5">Storage Analysis</p>
-          </div>
-        </div>
-      </div>
-      <div class="relative z-10 p-5 md:p-6">
-        <TimelineChart 
-            data={timeseries} 
-            series={[
-                { label: "Docs", key: "memory_docs", color: "var(--color-amber-400)", type: "line" },
-                { label: "Chunks", key: "memory_chunks", color: "var(--color-goclaw-neon-magenta)", type: "line" }
-            ]}
-            height="180px"
-        />
-      </div>
-    </div>
+    <NexusCard
+      title="Memory Node Graph Growth"
+      subtitle="Storage Analysis"
+      icon={Database}
+      iconColorClass="text-amber-400"
+      iconBgClass="bg-amber-400/10 border-amber-400/20"
+    >
+      <TimelineChart 
+          data={timeseries} 
+          series={[
+              { label: "Docs", key: "memory_docs", color: "var(--color-amber-400)", type: "line" },
+              { label: "Chunks", key: "memory_chunks", color: "var(--color-goclaw-neon-magenta)", type: "line" }
+          ]}
+          height="180px"
+      />
+    </NexusCard>
   </div>
 
   <div class="grid gap-6">
     <!-- Top Models Matrix (Enhanced) -->
-    <div class="relative overflow-hidden bg-[#030014]/40 backdrop-blur-3xl border border-white/5 border-l-4 border-l-goclaw-neon-cyan shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-3xl">
-      <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-20"></div>
-      
-      <div class="relative z-10 border-b border-white/5 py-5 px-6 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="p-1.5 rounded bg-goclaw-neon-cyan/10 border border-goclaw-neon-cyan/20">
-            <Bot class="h-5 w-5 text-goclaw-neon-cyan" />
-          </div>
-          <div>
-            <h3 class="text-[10px] font-bold uppercase tracking-[0.3em] text-white/80">Top Operational Models</h3>
-            <p class="text-[9px] font-mono text-white/30 uppercase tracking-widest mt-0.5">Leaderboard Node Matrix</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="relative z-10 p-5 overflow-x-auto">
+    <NexusCard
+      title="Top Operational Models"
+      subtitle="Leaderboard Node Matrix"
+      icon={Bot}
+      iconColorClass="text-goclaw-neon-cyan"
+      iconBgClass="bg-goclaw-neon-cyan/10 border-goclaw-neon-cyan/20"
+      noPadding={true}
+    >
+      <div class="overflow-x-auto p-5">
         <div class="flex flex-col gap-2 min-w-[800px]">
           <!-- Tactical Header -->
           <div class="grid grid-cols-12 gap-4 px-4 py-2 border-b border-white/5 text-[9px] font-bold text-white/30 uppercase tracking-[0.2em]">
@@ -466,28 +438,24 @@
           {/each}
         </div>
       </div>
-    </div>
+    </NexusCard>
 
     <!-- Forensic Usage Stream -->
-    <div class="relative overflow-hidden bg-[#030014]/40 backdrop-blur-3xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-3xl group">
-        <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-20"></div>
-        
-        <div class="relative z-10 border-b border-white/5 p-5 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-             <div class="p-2 rounded-xl bg-goclaw-neon-purple/10 border border-goclaw-neon-purple/20">
-                <Activity class="h-5 w-5 text-goclaw-neon-purple animate-pulse" />
-             </div>
-             <div>
-                <h3 class="text-sm font-bold uppercase tracking-[0.2em] text-white">Forensic Usage Stream</h3>
-                <p class="text-[10px] font-mono text-white/40 uppercase tracking-widest mt-0.5">Raw Telemetry Data</p>
-             </div>
-          </div>
-          <div class="flex items-center gap-4 bg-black/50 px-3 py-1.5 rounded-lg border border-white/5 shadow-inner">
-            <span class="text-[10px] font-bold text-white/40 uppercase tracking-widest">Records Index: <span class="font-mono text-white/80">{usageState.totalRecords}</span></span>
-          </div>
+    <NexusCard
+      title="Forensic Usage Stream"
+      subtitle="Raw Telemetry Data"
+      icon={Activity}
+      iconColorClass="text-goclaw-neon-purple"
+      iconBgClass="bg-goclaw-neon-purple/10 border-goclaw-neon-purple/20"
+      noPadding={true}
+    >
+      {#snippet headerActions()}
+        <div class="flex items-center gap-4 bg-black/50 px-3 py-1.5 rounded-lg border border-white/5 shadow-inner">
+          <span class="text-[10px] font-bold text-white/40 uppercase tracking-widest">Records Index: <span class="font-mono text-white/80">{usageState.totalRecords}</span></span>
         </div>
+      {/snippet}
 
-        <div class="relative z-10 p-5 overflow-x-auto">
+      <div class="overflow-x-auto p-5">
             <div class="flex flex-col gap-2 min-w-[800px]">
               
               <!-- Tactical Header -->
@@ -566,7 +534,7 @@
               </button>
            </div>
         </div>
-    </div>
+    </NexusCard>
   </div>
 
 </div>

@@ -1,6 +1,11 @@
 export const uiState = $state({
     timezone: localStorage.getItem("goclaw:timezone") || "auto",
+    isMobileMenuOpen: false,
 });
+
+export function toggleMobileMenu() {
+    uiState.isMobileMenuOpen = !uiState.isMobileMenuOpen;
+}
 
 export function setTimezone(tz: string) {
     uiState.timezone = tz;

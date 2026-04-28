@@ -100,29 +100,33 @@
 <div class="h-full overflow-y-auto p-4 sm:p-6 pb-10 space-y-8 relative isolate custom-scrollbar">
   
   <!-- Global Background Effects for Dashboard -->
-  <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(217,70,239,0.05)_0%,transparent_50%)] pointer-events-none"></div>
-  <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(6,182,212,0.05)_0%,transparent_50%)] pointer-events-none"></div>
+  <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(217,70,239,0.1)_0%,transparent_60%)] pointer-events-none"></div>
+  <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(6,182,212,0.1)_0%,transparent_60%)] pointer-events-none"></div>
 
   <!-- Radical Telemetry HUD Header -->
-  <div class="relative bg-[#030014]/40 backdrop-blur-3xl border border-white/5 rounded-3xl p-6 shadow-[0_0_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] overflow-hidden">
-    <div class="absolute top-0 right-0 w-64 h-64 bg-goclaw-neon-purple/10 rounded-full blur-[80px] pointer-events-none"></div>
-    <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-50"></div>
+  <div class="relative bg-black/40 backdrop-blur-3xl border border-[#d946ef]/20 rounded-3xl p-6 shadow-[0_0_50px_rgba(217,70,239,0.1),inset_0_1px_1px_rgba(255,255,255,0.1)] overflow-hidden">
+    <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-[#d946ef]/20 to-[#3b82f6]/10 rounded-full blur-[100px] pointer-events-none -translate-y-1/2 translate-x-1/3"></div>
+    <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(217,70,239,0.05)_1px,transparent_1px),linear-gradient(0deg,rgba(217,70,239,0.05)_1px,transparent_1px)] bg-[size:30px_30px] pointer-events-none opacity-60"></div>
     
     <div class="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
       
       <!-- Identity & Title -->
       <div class="flex items-start gap-4">
-        <div class="relative hidden sm:flex items-center justify-center w-16 h-16 rounded-2xl bg-black/50 border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
-          <Activity class="w-8 h-8 text-goclaw-neon-cyan animate-pulse-slow" strokeWidth={1.5} />
-          <div class="absolute -right-1 -top-1 w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)] border-2 border-[#030014]"></div>
+        <div class="relative hidden sm:flex items-center justify-center w-20 h-20 rounded-2xl bg-black/60 border border-[#d946ef]/30 shadow-[0_0_30px_rgba(217,70,239,0.2),inset_0_1px_2px_rgba(255,255,255,0.2)] overflow-hidden group">
+          <div class="absolute inset-0 bg-gradient-to-br from-[#d946ef]/10 to-transparent group-hover:from-[#d946ef]/30 transition-all duration-500"></div>
+          <Activity class="w-10 h-10 text-[#d946ef] drop-shadow-[0_0_10px_rgba(217,70,239,0.8)] animate-pulse-slow" strokeWidth={1.5} />
+          <div class="absolute -right-1 -top-1 w-4 h-4 rounded-full bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.9)] border-2 border-black"></div>
         </div>
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="text-[10px] font-mono text-goclaw-neon-cyan uppercase tracking-[0.3em] bg-goclaw-neon-cyan/10 border border-goclaw-neon-cyan/20 px-2 py-0.5 rounded-md">Sys: Online</span>
-            <span class="text-[10px] text-white/40 font-mono tracking-widest uppercase">Global Telemetry</span>
+        <div class="flex flex-col justify-center py-1">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-[11px] font-mono text-[#d946ef] uppercase tracking-[0.3em] bg-[#d946ef]/10 border border-[#d946ef]/30 px-3 py-1 rounded-md shadow-[0_0_10px_rgba(217,70,239,0.2)]">Core Uplink</span>
+            <span class="text-[11px] text-white/50 font-mono tracking-widest uppercase flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#06b6d4] shadow-[0_0_5px_rgba(6,182,212,0.8)]"></span>
+              Autonomous Agent Env
+            </span>
           </div>
-          <h1 class="text-3xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/40 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-            {$_('overview.title', { default: "Command Center" })}
+          <h1 class="text-4xl sm:text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-[#d946ef] to-[#3b82f6] drop-shadow-[0_0_20px_rgba(217,70,239,0.3)]">
+            {$_('overview.title', { default: "NEXUS COMMAND" })}
           </h1>
         </div>
       </div>
