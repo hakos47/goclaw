@@ -38,6 +38,36 @@ function ensureSession(key: string): SessionState {
     return chatState.sessions[key];
 }
 
+/** Helper to extract and clean <think> tags from content */
+function extractThinkingTags(content: string): { content: string, thinking?: string } {
+    if (!content) return { content };
+    
+    const thinkRegex = /<think>([\s\S]*?)<\/think>/gi;
+    let thinking = "";
+    let cleanContent = content;
+    let match;
+
+    // Reset regex state
+    thinkRegex.lastIndex = 0;
+    while ((match = thinkRegex.exec(content)) !== null) {
+        thinking += (thinking ? "\n\n" : "") + match[1].trim();
+        cleanContent = cleanContent.replace(match[0], "");
+    }
+    
+    // Also handle unclosed <think> tags (streaming artifacts)
+    if (cleanContent.includes("<think>")) {
+        const startIdx = cleanContent.indexOf("<think>");
+        const remaining = cleanContent.substring(startIdx + 7);
+        thinking += (thinking ? "\n\n" : "") + remaining.trim();
+        cleanContent = cleanContent.substring(0, startIdx);
+    }
+
+    return { 
+        content: cleanContent.trim(), 
+        thinking: thinking || undefined 
+    };
+}
+
 export async function loadChatHistory(sessionKey: string, agentId: string) {
     if (!sessionKey || sessionKey === 'chat') return;
     
@@ -66,10 +96,12 @@ export async function loadChatHistory(sessionKey: string, agentId: string) {
         );
 
         chatState.sessions[sessionKey].messages = filtered.map((m: any) => {
+            const { content: cleanContent, thinking: extractedThinking } = extractThinkingTags(m.content);
+            
             const chatMsg: any = {
                 role: m.role,
-                content: m.content,
-                thinking: m.thinking,
+                content: cleanContent,
+                thinking: m.thinking || extractedThinking,
                 timestamp: m.timestamp || Date.now()
             };
             
@@ -288,10 +320,12 @@ export function handleAgentEvent(event: AgentEventPayload) {
                     });
                 }
 
+                const { content: cleanContent, thinking: extractedThinking } = extractThinkingTags(finalContent);
+
                 const finalMsg: any = {
                     role: "assistant",
-                    content: finalContent.trim(),
-                    thinking: thinkingRef || undefined,
+                    content: cleanContent,
+                    thinking: thinkingRef || extractedThinking,
                     timestamp: Date.now()
                 };
 

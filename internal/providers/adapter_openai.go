@@ -10,13 +10,17 @@ import (
 // OpenAIAdapter implements ProviderAdapter for OpenAI Chat Completions API.
 // Delegates to OpenAIProvider's buildRequestBody/parseResponse for DRY.
 type OpenAIAdapter struct {
-	provider *OpenAIProvider
+	provider  *OpenAIProvider
+	extractor *ThinkExtractor
 }
 
 // NewOpenAIAdapter creates an adapter from ProviderConfig.
 func NewOpenAIAdapter(cfg ProviderConfig) (ProviderAdapter, error) {
 	p := NewOpenAIProvider(cfg.Name, cfg.APIKey, cfg.BaseURL, cfg.Model)
-	return &OpenAIAdapter{provider: p}, nil
+	return &OpenAIAdapter{
+		provider:  p,
+		extractor: &ThinkExtractor{},
+	}, nil
 }
 
 func (a *OpenAIAdapter) Name() string { return "openai" }
@@ -71,7 +75,18 @@ func (a *OpenAIAdapter) FromResponse(data []byte) (*ChatResponse, error) {
 	if err := json.Unmarshal(data, &resp); err != nil {
 		return nil, fmt.Errorf("openai adapter: decode: %w", err)
 	}
-	return a.provider.parseResponse(&resp), nil
+	result := a.provider.parseResponse(&resp)
+
+	// Extract <think> tags from content (Phase 11: MiniMax fix)
+	if result != nil && result.Content != "" {
+		content, thinking := ExtractFromFull(result.Content)
+		if thinking != "" {
+			result.Content = content
+			result.Thinking += thinking
+		}
+	}
+
+	return result, nil
 }
 
 // FromStreamChunk parses a single OpenAI SSE data payload.
@@ -96,21 +111,29 @@ func (a *OpenAIAdapter) FromStreamChunk(data []byte) (*StreamChunk, error) {
 	sc := &StreamChunk{}
 	hasContent := false
 
-	// Reasoning content (thinking)
-	reasoning := delta.ReasoningContent
-	if reasoning == "" {
-		reasoning = delta.Reasoning
+	// Extract <think> tags from streaming content (Phase 11: MiniMax fix)
+	if delta.Content != "" {
+		content, thinking := a.extractor.ProcessChunk(delta.Content)
+		if thinking != "" {
+			sc.Thinking = thinking
+			hasContent = true
+		}
+		if content != "" {
+			sc.Content = content
+			hasContent = true
+		}
 	}
-	if reasoning != "" {
-		sc.Thinking = reasoning
+
+	// Native reasoning content (thinking)
+	if delta.ReasoningContent != "" || delta.Reasoning != "" {
+		reasoning := delta.ReasoningContent
+		if reasoning == "" {
+			reasoning = delta.Reasoning
+		}
+		sc.Thinking += reasoning
 		hasContent = true
 	}
 
-	// Text content
-	if delta.Content != "" {
-		sc.Content = delta.Content
-		hasContent = true
-	}
 
 	if !hasContent {
 		return nil, nil

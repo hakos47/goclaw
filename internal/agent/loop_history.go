@@ -270,6 +270,8 @@ func (l *Loop) buildMessages(ctx context.Context, runID string, history []provid
 				DelegateTargets:        l.delegateTargets,
 				OrchMode:               l.orchMode,
 				ProviderContribution:   l.providerContribution(),
+				CurrentUserID:          userID,
+				CurrentUserName:        chatTitle, // Fallback to chatTitle (PushName in DMs)
 			})
 			// Cache the built prompt
 			l.systemPromptCache.Set(cacheKey, providers.Message{Role: "system", Content: systemPrompt})
@@ -318,6 +320,8 @@ func (l *Loop) buildMessages(ctx context.Context, runID string, history []provid
 		DelegateTargets:        l.delegateTargets,
 		OrchMode:               l.orchMode,
 		ProviderContribution:   l.providerContribution(),
+		CurrentUserID:          userID,
+		CurrentUserName:        chatTitle,
 	})
 	}
 

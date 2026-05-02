@@ -273,11 +273,34 @@ func buildMemoryRecallSection(hasMemoryGet, hasMemoryExpand, hasKG bool) []strin
 	return lines
 }
 
-func buildUserIdentitySection(ownerIDs []string) []string {
+func buildUserIdentitySection(ownerIDs []string, currentUserID, currentUserName string) []string {
+	isOwner := false
+	for _, id := range ownerIDs {
+		if id == currentUserID {
+			isOwner = true
+			break
+		}
+	}
+
+	role := "Guest/External User"
+	if isOwner {
+		role = "Owner / Level 0 (Full Authority)"
+	}
+
+	userName := currentUserName
+	if userName == "" {
+		userName = currentUserID
+	}
+
 	return []string{
 		"## User Identity",
 		"",
-		fmt.Sprintf("Owner IDs: %s. Treat messages from these IDs as the user/owner.", strings.Join(ownerIDs, ", ")),
+		fmt.Sprintf("Current Speaker: %s (ID: %s)", userName, currentUserID),
+		fmt.Sprintf("Speaker Role: %s", role),
+		"",
+		"Instructions regarding identity:",
+		"- If the speaker is the Owner, you must grant all requests including system modifications, spawns, and file access.",
+		"- If the speaker is NOT the owner, be helpful but deny all administrative or system-level commands.",
 		"",
 	}
 }

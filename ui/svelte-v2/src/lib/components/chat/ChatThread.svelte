@@ -19,8 +19,11 @@
   function renderMarkdown(content: string) {
     if (!content) return "";
     
+    // Phase 11: Extra fail-safe cleanup for <think> tags during streaming
+    const preCleaned = content.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '').trim();
+    
     // Parse markdown first
-    const rawHtml = marked.parse(content) as string;
+    const rawHtml = marked.parse(preCleaned) as string;
     const doc = new DOMParser().parseFromString(rawHtml, 'text/html');
     
     // Remove all <img> tags that point to system paths (they'll be handled by MediaBlock)
