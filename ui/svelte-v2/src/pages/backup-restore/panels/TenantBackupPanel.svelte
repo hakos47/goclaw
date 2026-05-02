@@ -97,6 +97,16 @@
       </h3>
 
       <div class="flex-1 flex flex-col justify-center relative z-10">
+        {#if backupSse.error}
+          <div class="mb-4 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono uppercase tracking-widest break-words">
+            <div class="font-bold mb-1 flex items-center gap-2">
+              <XCircle class="h-4 w-4 shrink-0" />
+              Error ({backupSse.error.phase}):
+            </div>
+            <div class="ml-6 opacity-80">{backupSse.error.detail}</div>
+          </div>
+        {/if}
+
         {#if backupSse.steps.length > 0}
           <OperationProgress steps={backupSse.steps} elapsed={backupSse.elapsed} class="mb-4" />
         {/if}
@@ -133,6 +143,16 @@
       </h3>
 
       <div class="flex-1 flex flex-col justify-center relative z-10">
+        {#if restoreSse.error}
+          <div class="mb-4 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono uppercase tracking-widest break-words">
+            <div class="font-bold mb-1 flex items-center gap-2">
+              <XCircle class="h-4 w-4 shrink-0" />
+              Error ({restoreSse.error.phase}):
+            </div>
+            <div class="ml-6 opacity-80">{restoreSse.error.detail}</div>
+          </div>
+        {/if}
+
         {#if restoreSse.steps.length > 0}
           <OperationProgress steps={restoreSse.steps} elapsed={restoreSse.elapsed} class="mb-4" />
         {/if}

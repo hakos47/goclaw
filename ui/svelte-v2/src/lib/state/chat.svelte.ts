@@ -93,6 +93,36 @@ export async function loadChatHistory(sessionKey: string, agentId: string) {
                     mimeType: med.content_type || 'application/octet-stream'
                 }));
             }
+            
+            // Extract raw paths from content that the backend might have leaked
+            if (chatMsg.content) {
+                const pathRegex = /(?:📸\s*|📷\s*|MEDIA:\s*|FILE:\s*)?`?(\/(?:home|var|tmp|mnt|usr)[^\s"'`]+\.(?:png|jpg|jpeg|gif|webp|mp4|webm))`?/gi;
+                let match;
+                const leakedPaths = [];
+                let newContent = chatMsg.content;
+                
+                while ((match = pathRegex.exec(chatMsg.content)) !== null) {
+                    leakedPaths.push(match[1]);
+                    // Replace the matched text with empty string to completely hide it
+                    newContent = newContent.replace(match[0], '');
+                }
+                
+                if (leakedPaths.length > 0) {
+                    chatMsg.content = newContent.trim();
+                    chatMsg.mediaItems = chatMsg.mediaItems || [];
+                    leakedPaths.forEach(p => {
+                        // Avoid duplicates by checking the filename
+                        const filename = p.split('/').pop() || p;
+                        if (!chatMsg.mediaItems.find((med: any) => med.path && med.path.endsWith(filename))) {
+                            chatMsg.mediaItems.push({
+                                path: p,
+                                mimeType: p.endsWith('.png') ? 'image/png' : 'application/octet-stream'
+                            });
+                        }
+                    });
+                }
+            }
+            
             return chatMsg;
         });
         chatState.error = null;
@@ -228,21 +258,48 @@ export function handleAgentEvent(event: AgentEventPayload) {
         case "run.completed":
             session.isRunning = false;
             if (streamRef || thinkingRef || toolStreamRef.length > 0 || event.payload?.media?.length) {
+                let finalContent = streamRef;
+                let finalMedia: any[] = [];
+                
+                // Extract leaked paths from the streaming content
+                const pathRegex = /(?:📸\s*|📷\s*|MEDIA:\s*|FILE:\s*)?`?(\/(?:home|var|tmp|mnt|usr)[^\s"'`]+\.(?:png|jpg|jpeg|gif|webp|mp4|webm))`?/gi;
+                let match;
+                while ((match = pathRegex.exec(streamRef)) !== null) {
+                    finalMedia.push({
+                        path: match[1],
+                        mimeType: match[1].endsWith('.png') ? 'image/png' : 'application/octet-stream'
+                    });
+                    finalContent = finalContent.replace(match[0], '');
+                }
+
+                if (event.payload?.media && event.payload.media.length > 0) {
+                    event.payload.media.forEach((med: any) => {
+                        const p = med.path || med.url;
+                        const filename = p.split('/').pop() || p;
+                        if (!finalMedia.find(m => m.path && m.path.endsWith(filename))) {
+                            finalMedia.push({
+                                path: p,
+                                mimeType: med.content_type || 'application/octet-stream'
+                            });
+                        }
+                    });
+                }
+
                 const finalMsg: any = {
                     role: "assistant",
-                    content: streamRef,
+                    content: finalContent.trim(),
                     thinking: thinkingRef || undefined,
                     timestamp: Date.now()
                 };
+
                 if (toolStreamRef.length > 0) {
                     finalMsg.toolDetails = [...toolStreamRef];
                 }
-                if (event.payload?.media && event.payload.media.length > 0) {
-                    finalMsg.mediaItems = event.payload.media.map((med: any) => ({
-                        path: med.path || med.url,
-                        mimeType: med.content_type || 'application/octet-stream'
-                    }));
+                
+                if (finalMedia.length > 0) {
+                    finalMsg.mediaItems = finalMedia;
                 }
+                
                 session.messages = [...session.messages, finalMsg];
             }
             session.streamText = null;

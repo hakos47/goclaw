@@ -88,6 +88,9 @@ func (d *gatewayDeps) wireHTTPHandlersOnServer(
 		}
 		d.server.SetPendingMessagesHandler(h.pendingMessages)
 	}
+	// Security & Auth endpoints
+	d.server.SetAuthWebAuthnHandler(httpapi.NewAuthWebAuthnHandler(d.pgStores.AuthorizedDevices, d.cfg.Gateway.Token))
+
 	if h.secureCLI != nil {
 		d.server.SetSecureCLIHandler(h.secureCLI)
 	}

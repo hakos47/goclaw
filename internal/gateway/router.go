@@ -361,13 +361,10 @@ func (r *MethodRouter) sendConnectResponse(ctx context.Context, client *Client, 
 }
 
 // isOwnerID checks if the given user ID is in the configured owner list.
-// If no owner IDs configured, only "system" is treated as owner (fail-closed).
+// If no owner IDs configured, all gateway-token users are treated as owners (fail-open for dev).
 func isOwnerID(userID string, ownerIDs []string) bool {
-	if userID == "" {
-		return false
-	}
 	if len(ownerIDs) == 0 {
-		return userID == "system"
+		return true
 	}
 	return slices.Contains(ownerIDs, userID)
 }

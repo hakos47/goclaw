@@ -49,6 +49,9 @@ services:
       - GOCLAW_SKILLS_DIR=/app/data/skills
       # Debug
       - GOCLAW_TRACE_VERBOSE=${GOCLAW_TRACE_VERBOSE:-0}
+      # Browser
+      - ROD_BIN=/usr/bin/chromium-browser
+      - ROD_LEAKLESS=false
     volumes:
       - goclaw-data:/app/data
       - goclaw-workspace:/app/workspace
@@ -64,7 +67,7 @@ services:
       - SETGID
       - CHOWN
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=256m
+      - /tmp:rw,nosuid,size=256m
     deploy:
       resources:
         limits:

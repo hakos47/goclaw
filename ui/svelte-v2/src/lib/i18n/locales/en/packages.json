@@ -1,30 +1,35 @@
 {
   "title": "Runtime & Packages",
   "description": "Manage runtimes and installed packages inside the active GoClaw runtime container",
+  "pageTitle": "Package Manager",
+  "pageSubtitle": "System, PIP, NPM & Binaries",
+  "refresh": "Refresh",
   "runtimes": {
-    "title": "Runtimes",
+    "title": "Container Runtimes",
     "scopeTitle": "Container-scoped runtime status",
     "scopeDesc": "These checks run inside the active GoClaw runtime container. Host-installed runtimes, shell profile changes, and nvm-managed binaries are not used here.",
+    "minimalWarning": "Minimal Container Warning",
     "minimalImageHint": "The published latest image is minimal, so missing Python or Node runtimes can be expected there. Use the python, node, or full image variant, rebuild with ENABLE_PYTHON=true / ENABLE_NODE=true / ENABLE_FULL_SKILLS=true, or install runtimes manually in this container.",
     "available": "Available",
     "missing": "Missing",
-    "missingInContainer": "Missing in container"
+    "missingInContainer": "Missing from container",
+    "installed": "Installed"
   },
   "system": {
     "title": "System Packages",
-    "placeholder": "Package name (e.g. github-cli)"
+    "placeholder": "e.g. nmap, jq, curl"
   },
   "pip": {
-    "title": "Python Packages",
-    "placeholder": "Package name (e.g. pandas)"
+    "title": "PIP Packages (Python)",
+    "placeholder": "e.g. requests, beautifulsoup4"
   },
   "npm": {
-    "title": "Node Packages",
-    "placeholder": "Package name (e.g. typescript)"
+    "title": "NPM Packages (Node)",
+    "placeholder": "e.g. axios, lodash"
   },
   "github": {
     "title": "GitHub Binaries",
-    "placeholder": "owner/repo[@tag] (e.g. cli/cli@v2.45.0)",
+    "placeholder": "e.g. jqlang/jq",
     "browse": "Browse releases",
     "muslWarning": "Alpine Linux uses musl libc. Binaries compiled against glibc may fail at runtime. Prefer static or musl-compatible releases.",
     "muslDismiss": "Dismiss",
@@ -43,7 +48,7 @@
   },
   "actions": {
     "install": "Install",
-    "uninstall": "Uninstall",
+    "uninstall": "Uninstall Package",
     "installing": "Installing...",
     "uninstalling": "Removing..."
   },
@@ -61,6 +66,6 @@
     "name": "Name",
     "version": "Version",
     "actions": "Actions",
-    "empty": "No packages installed"
+    "empty": "No packages installed in this ecosystem."
   }
 }

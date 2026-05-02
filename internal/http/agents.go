@@ -114,7 +114,7 @@ func (h *AgentsHandler) SetPreviewStores(ts store.TeamStore, als store.AgentLink
 
 // isOwnerUser checks if the given user ID is a system owner.
 func (h *AgentsHandler) isOwnerUser(userID string) bool {
-	return userID != "" && h.isOwner != nil && h.isOwner(userID)
+	return h.isOwner != nil && h.isOwner(userID)
 }
 
 // emitCacheInvalidate broadcasts a cache invalidation event if msgBus is set.

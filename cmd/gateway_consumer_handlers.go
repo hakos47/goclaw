@@ -491,6 +491,64 @@ func handleStopCommand(
 	return true
 }
 
+// handleDeviceAuthCommand processes /approve and /deny commands for the Guardian Mode.
+func handleDeviceAuthCommand(ctx context.Context, msg bus.InboundMessage, deps *ConsumerDeps) bool {
+	cmd := msg.Metadata[tools.MetaCommand]
+	if cmd != "approve" && cmd != "deny" {
+		return false
+	}
+
+	if deps.AuthDevices == nil {
+		return false
+	}
+
+	content := strings.TrimSpace(msg.Content)
+	if content == "" {
+		deps.MsgBus.PublishOutbound(bus.OutboundMessage{
+			Channel:  msg.Channel,
+			ChatID:   msg.ChatID,
+			Content:  "Please provide a device ID. Usage: /" + cmd + " [device_id]",
+			Metadata: msg.Metadata,
+		})
+		return true
+	}
+
+	parts := strings.Split(content, " ")
+	deviceID := strings.TrimSpace(parts[0])
+
+	var success bool
+	var err error
+	if cmd == "approve" {
+		success, err = deps.AuthDevices.ApproveDevice(ctx, msg.TenantID, deviceID)
+	} else {
+		success, err = deps.AuthDevices.DenyDevice(ctx, msg.TenantID, deviceID)
+	}
+
+	var feedback string
+	if err != nil {
+		slog.Error("device auth command failed", "cmd", cmd, "device_id", deviceID, "error", err)
+		feedback = fmt.Sprintf("Error processing command: %v", err)
+	} else if success {
+		slog.Info("device auth command succeeded", "cmd", cmd, "device_id", deviceID)
+		if cmd == "approve" {
+			feedback = fmt.Sprintf("✅ Device %s has been APPROVED and added to your trusted devices.", deviceID)
+		} else {
+			feedback = fmt.Sprintf("🚫 Device %s has been DENIED and deleted.", deviceID)
+		}
+	} else {
+		feedback = fmt.Sprintf("⚠️ Device %s not found or already processed.", deviceID)
+	}
+
+	deps.MsgBus.PublishOutbound(bus.OutboundMessage{
+		Channel:  msg.Channel,
+		ChatID:   msg.ChatID,
+		Content:  feedback,
+		Metadata: msg.Metadata,
+	})
+
+	return true
+}
+
 // buildTaskBoardSnapshot returns a formatted summary of batch task statuses
 // for inclusion in the announce message to the leader. Scoped by (teamID, chatID)
 // and filtered by origin_trace_id to show only tasks from the current batch.

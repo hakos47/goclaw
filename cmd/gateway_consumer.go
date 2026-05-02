@@ -27,7 +27,7 @@ import (
 // and routes them through the scheduler/agent loop, then publishes the response back.
 // Also handles subagent announcements: routes them through the parent agent's session
 // (matching TS subagent-announce.ts pattern) so the agent can reformulate for the user.
-func consumeInboundMessages(ctx context.Context, msgBus *bus.MessageBus, agents *agent.Router, cfg *config.Config, sched *scheduler.Scheduler, channelMgr *channels.Manager, teamStore store.TeamStore, quotaChecker *channels.QuotaChecker, sessStore store.SessionStore, agentStore store.AgentStore, contactCollector *store.ContactCollector, postTurn tools.PostTurnProcessor, subagentMgr *tools.SubagentManager, hookDispatcher hooks.Dispatcher) {
+func consumeInboundMessages(ctx context.Context, msgBus *bus.MessageBus, agents *agent.Router, cfg *config.Config, sched *scheduler.Scheduler, channelMgr *channels.Manager, teamStore store.TeamStore, quotaChecker *channels.QuotaChecker, sessStore store.SessionStore, agentStore store.AgentStore, contactCollector *store.ContactCollector, postTurn tools.PostTurnProcessor, subagentMgr *tools.SubagentManager, hookDispatcher hooks.Dispatcher, authDevices store.AuthorizedDeviceStore) {
 	slog.Info("inbound message consumer started")
 
 	// Inbound message deduplication (matching TS src/infra/dedupe.ts + inbound-dedupe.ts).
@@ -55,6 +55,7 @@ func consumeInboundMessages(ctx context.Context, msgBus *bus.MessageBus, agents 
 		TeamStore:        teamStore,
 		AgentStore:       agentStore,
 		SessStore:        sessStore,
+		AuthDevices:      authDevices,
 		PostTurn:         postTurn,
 		QuotaChecker:     quotaChecker,
 		ContactCollector: contactCollector,
@@ -131,6 +132,9 @@ func consumeInboundMessages(ctx context.Context, msgBus *bus.MessageBus, agents 
 			continue
 		}
 		if handleStopCommand(msg, deps) {
+			continue
+		}
+		if handleDeviceAuthCommand(ctx, msg, deps) {
 			continue
 		}
 

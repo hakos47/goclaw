@@ -144,6 +144,9 @@ ui/web/.vite/
 ui/web/node_modules/
 ui/web/package.json.md5
 ui/web/src/i18n/generated/
+ui/svelte-v2/dist/
+ui/svelte-v2/.vite/
+ui/svelte-v2/node_modules/
 ui/desktop/frontend/dist/
 ui/desktop/frontend/.vite/
 ui/desktop/frontend/node_modules/

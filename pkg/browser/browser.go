@@ -30,6 +30,8 @@ type Manager struct {
 	idleTimeout   time.Duration // auto-close pages idle longer than this (default 10m, 0=disabled)
 	maxPages      int           // max open pages per tenant (default 5)
 	stopReaper    chan struct{} // signal to stop the reaper goroutine
+	leakless      bool
+	binPath       string        // path to Chrome/Chromium binary; overrides environment discovery
 	logger        *slog.Logger
 }
 
@@ -39,6 +41,16 @@ type Option func(*Manager)
 // WithHeadless sets headless mode (default false).
 func WithHeadless(h bool) Option {
 	return func(m *Manager) { m.headless = h }
+}
+
+// WithLeakless enables or disables Rod's leakless helper (default true).
+func WithLeakless(l bool) Option {
+	return func(m *Manager) { m.leakless = l }
+}
+
+// WithBinPath sets an explicit path to the Chrome/Chromium binary.
+func WithBinPath(path string) Option {
+	return func(m *Manager) { m.binPath = path }
 }
 
 // WithRemoteURL sets a remote CDP endpoint (e.g. "ws://chrome:9222").
@@ -79,6 +91,7 @@ func New(opts ...Option) *Manager {
 		actionTimeout: 30 * time.Second,
 		idleTimeout:   30 * time.Minute,
 		maxPages:      10,
+		leakless:      true,
 		logger:        slog.Default(),
 	}
 	for _, o := range opts {
@@ -135,7 +148,7 @@ func (m *Manager) Start(ctx context.Context) error {
 
 		l := launcher.New().
 			Context(launchCtx).
-			Leakless(true).
+			Leakless(m.leakless).
 			Headless(m.headless).
 			Set("disable-gpu").
 			Set("no-sandbox").
@@ -149,6 +162,10 @@ func (m *Manager) Start(ctx context.Context) error {
 			Set("disable-background-timer-throttling").
 			Set("disable-backgrounding-occluded-windows").
 			Set("disable-setuid-sandbox")
+
+		if m.binPath != "" {
+			l.Bin(m.binPath)
+		}
 
 		u, err := l.Launch()
 		if err != nil {

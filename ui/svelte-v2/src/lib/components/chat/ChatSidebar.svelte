@@ -58,7 +58,7 @@
   }
 </script>
 
-<div class="w-80 h-full flex flex-col border-r border-white/5 bg-[#030014]/60 backdrop-blur-3xl shadow-[5px_0_30px_rgba(0,0,0,0.5)] z-10 relative overflow-hidden">
+<div class="w-full md:w-80 h-full md:h-[calc(100%-2rem)] md:my-4 md:ml-4 flex flex-col border-r md:border border-white/5 md:border-[#d946ef]/20 bg-black/40 backdrop-blur-3xl shadow-[5px_0_30px_rgba(0,0,0,0.5)] md:shadow-[0_0_40px_rgba(217,70,239,0.1),inset_0_1px_1px_rgba(255,255,255,0.05)] md:rounded-[2rem] z-10 relative overflow-hidden transition-all duration-300">
   <!-- Scanline Background for Sidebar -->
   <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100%_4px] opacity-20 pointer-events-none"></div>
   <div class="absolute top-0 right-0 w-64 h-64 bg-goclaw-neon-purple/10 blur-[80px] rounded-full pointer-events-none translate-x-1/2 -translate-y-1/2"></div>
@@ -73,7 +73,7 @@
         <Bot class="absolute left-4 top-3.5 h-5 w-5 text-goclaw-neon-purple z-10 pointer-events-none" />
         <ChevronDown class="absolute right-4 top-4 h-4 w-4 text-white/20 pointer-events-none z-10 transition-transform group-hover:text-goclaw-neon-purple" />
 
-        <div class="absolute top-full left-0 right-0 mt-2 bg-[#030014]/90 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_30px_100px_rgba(0,0,0,1),inset_0_1px_1px_rgba(255,255,255,0.05)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100] flex flex-col p-2 max-h-[300px] overflow-y-auto custom-scrollbar relative isolate">
+        <div class="absolute top-full left-0 right-0 mt-2 bg-[#030014]/90 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_30px_100px_rgba(0,0,0,1),inset_0_1px_1px_rgba(255,255,255,0.05)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100] flex flex-col p-2 max-h-[300px] overflow-y-auto custom-scrollbar isolate">
             <!-- Scanline Background for Dropdown -->
             <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100%_4px] opacity-20 pointer-events-none rounded-2xl"></div>
             

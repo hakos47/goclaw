@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DatabaseBackup, Download, UploadCloud, History } from "lucide-svelte";
+  import { DatabaseBackup, Download, UploadCloud, History, XCircle } from "lucide-svelte";
   import { _ } from "svelte-i18n";
   import { SseProgress } from "$lib/state/sse.svelte";
   import { useHttp } from "$lib/state/ws.svelte";
@@ -25,8 +25,7 @@
   let destination = $state<"local" | "s3">("local");
   let s3Configured = $derived(!!configStore.config?.s3?.configured);
   
-  let preflightComponent: ReturnType<typeof BackupPreflightPanel>;
-  let hasCritical = $derived(preflightComponent?.getHasCritical() ?? true);
+  let hasCritical = $state(true);
 
   let s3History = $state<S3BackupEntry[]>([]);
   let loadingHistory = $state(false);
@@ -81,7 +80,7 @@
     <p class="text-[10px] text-white/50 uppercase tracking-widest mt-1">{$_("backup.systemBackup.description")}</p>
   </div>
 
-  <BackupPreflightPanel bind:this={preflightComponent} />
+  <BackupPreflightPanel bind:hasCritical />
 
   {#if s3Configured}
     <div class="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5 flex flex-col sm:flex-row gap-5 items-start sm:items-center">
@@ -126,6 +125,16 @@
       <span>{sse.status === "running" && !backupToken ? $_("backup.systemBackup.generating") : $_("backup.systemBackup.start")}</span>
     </button>
   </div>
+
+  {#if sse.error}
+    <div class="mt-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono uppercase tracking-widest break-words">
+      <div class="font-bold mb-1 flex items-center gap-2">
+        <XCircle class="h-4 w-4 shrink-0" />
+        Error ({sse.error.phase}):
+      </div>
+      <div class="ml-6 opacity-80">{sse.error.detail}</div>
+    </div>
+  {/if}
 
   {#if sse.steps.length > 0}
     <div class="mt-6">

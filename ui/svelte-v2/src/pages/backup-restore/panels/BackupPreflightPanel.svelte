@@ -18,17 +18,20 @@
     warnings: string[];
   }
 
+  interface Props {
+    hasCritical?: boolean;
+  }
+  let { hasCritical = $bindable(true) }: Props = $props();
+
   const http = useHttp();
   
   let data = $state<PreflightResult | null>(null);
   let loading = $state(true);
   let refreshing = $state(false);
 
-  let hasCriticalState = $derived(data ? !data.pg_dump_available || !data.disk_space_ok : true);
-
-  export function getHasCritical() {
-    return hasCriticalState;
-  }
+  $effect(() => {
+    hasCritical = data ? !data.pg_dump_available || !data.disk_space_ok : true;
+  });
 
   export async function loadPreflight() {
     refreshing = true;
@@ -125,7 +128,7 @@
       </div>
     {/if}
 
-    {#if hasCriticalState}
+    {#if hasCritical}
       <div class="pt-3 border-t border-rose-500/20 relative z-10">
         <p class="text-[10px] font-black uppercase tracking-widest text-rose-400 bg-rose-500/10 p-3 rounded-xl border border-rose-500/30 flex items-center gap-3">
           <AlertTriangle class="h-4 w-4 shrink-0" />

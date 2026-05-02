@@ -19,8 +19,7 @@
         { to: "/overview", icon: LayoutDashboard, label: $_('sidebar.nav.overview', { default: "Overview" }), color: "group-hover:text-goclaw-neon-cyan group-hover:neon-text-cyan" },
         { to: "/chat", icon: MessageSquare, label: $_('sidebar.nav.chat', { default: "Chat" }), color: "group-hover:text-goclaw-neon-purple group-hover:neon-text-purple" },
         { to: "/agents", icon: Bot, label: $_('sidebar.nav.agents', { default: "Agents" }), color: "group-hover:text-goclaw-neon-magenta group-hover:neon-text-magenta" },
-        { to: "/teams", icon: Users, label: $_('sidebar.nav.agentTeams', { default: "Agent Teams" }), color: "group-hover:text-amber-400" },
-        { to: "/tenants", icon: Building2, label: $_('sidebar.nav.tenants', { default: "Tenants" }), color: "group-hover:text-blue-500" },
+        { to: "/teams", icon: Users, label: $_('sidebar.nav.agentTeams', { default: "Agent Teams" }), color: "group-hover:text-amber-400" }
       ]
     },
     {

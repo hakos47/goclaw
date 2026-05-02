@@ -66,7 +66,12 @@ type GitHubPackagesConfig struct {
 // Defaults fills in zero-valued fields.
 func (c *GitHubPackagesConfig) Defaults() {
 	if c.BinDir == "" {
-		c.BinDir = "/app/data/.runtime/bin"
+		if _, err := os.Stat("/app"); err == nil {
+			c.BinDir = "/app/data/.runtime/bin"
+		} else {
+			home, _ := os.UserHomeDir()
+			c.BinDir = filepath.Join(home, ".goclaw", "data", ".runtime", "bin")
+		}
 	}
 	if c.ManifestPath == "" {
 		c.ManifestPath = filepath.Join(filepath.Dir(c.BinDir), "github-packages.json")

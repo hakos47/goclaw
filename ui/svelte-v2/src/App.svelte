@@ -7,6 +7,7 @@
   import SystemSettingsModal from "./lib/components/layout/SystemSettingsModal.svelte";
   import Overview from "./pages/Overview.svelte";
   import Login from "./pages/Login.svelte";
+  import Setup from "./pages/Setup.svelte";
   import Sessions from "./pages/Sessions.svelte";
   import Chat from "./pages/Chat.svelte";
   import Teams from "./pages/Teams.svelte";
@@ -120,11 +121,11 @@
     <!-- Dynamic WebGL/Canvas Background -->
     <DynamicBackground />
 
-    {#if !wsState.connected && wsState.currentPath !== '/login' && authState.token}
+    {#if !wsState.connected && wsState.currentPath !== '/login' && wsState.currentPath !== '/setup' && authState.token}
       <DisconnectedOverlay />
     {/if}
 
-    {#if wsState.currentPath !== '/login' && wsState.connected}
+    {#if wsState.currentPath !== '/login' && wsState.currentPath !== '/setup' && wsState.connected}
       <!-- Refractive Glassmorphism Sidebar -->
       <Sidebar />
     {/if}
@@ -133,6 +134,8 @@
     <div class="flex-1 flex flex-col relative z-10 overflow-hidden">
       {#if wsState.currentPath === '/login'}
           <Login />
+      {:else if wsState.currentPath === '/setup'}
+          <Setup />
       {:else}
           <Topbar onOpenSettings={() => showSettings = true} />
           <main class="flex-1 flex flex-col overflow-hidden relative pt-[90px]">

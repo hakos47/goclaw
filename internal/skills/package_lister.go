@@ -72,7 +72,12 @@ func ListInstalledPackages(ctx context.Context) *InstalledPackages {
 func listApkUserPackages(ctx context.Context) []PackageInfo {
 	runtimeDir := os.Getenv("RUNTIME_DIR")
 	if runtimeDir == "" {
-		runtimeDir = "/app/data/.runtime"
+		if _, err := os.Stat("/app"); err == nil {
+			runtimeDir = "/app/data/.runtime"
+		} else {
+			home, _ := os.UserHomeDir()
+			runtimeDir = filepath.Join(home, ".goclaw", "data", ".runtime")
+		}
 	}
 	listFile := filepath.Join(runtimeDir, "apk-packages")
 
@@ -101,35 +106,58 @@ func listApkUserPackages(ctx context.Context) []PackageInfo {
 	// Get versions for persisted packages via apk info.
 	var pkgs []PackageInfo
 	for _, name := range names {
-		version := getApkVersion(ctx, name)
+		version := getSystemPackageVersion(ctx, name)
 		pkgs = append(pkgs, PackageInfo{Name: name, Version: version})
 	}
 	return pkgs
 }
 
-// getApkVersion returns the installed version of an apk package, or empty string.
-// Uses "apk list --installed" which works without root and gives versioned output.
-func getApkVersion(ctx context.Context, name string) string {
-	// Output format: "github-cli-2.72.0-r6 aarch64 {github-cli} (MIT) [installed]"
-	out, err := exec.CommandContext(ctx, "apk", "list", "--installed", name).Output()
-	if err != nil {
-		return ""
-	}
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		// Extract version: everything between "name-" and the first space.
-		if strings.HasPrefix(line, name+"-") {
-			rest := strings.TrimPrefix(line, name+"-")
-			if idx := strings.IndexByte(rest, ' '); idx > 0 {
-				return rest[:idx]
+// getSystemPackageVersion returns the installed version of a system package, or empty string.
+// Falls back from apk -> nix -> dpkg -> brew.
+func getSystemPackageVersion(ctx context.Context, name string) string {
+	// 1. apk
+	if _, err := exec.LookPath("apk"); err == nil {
+		out, err := exec.CommandContext(ctx, "apk", "list", "--installed", name).Output()
+		if err == nil {
+			for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+				line = strings.TrimSpace(line)
+				if line == "" {
+					continue
+				}
+				if strings.HasPrefix(line, name+"-") {
+					rest := strings.TrimPrefix(line, name+"-")
+					if idx := strings.IndexByte(rest, ' '); idx > 0 {
+						return rest[:idx]
+					}
+					return rest
+				}
 			}
-			return rest
 		}
 	}
-	return ""
+
+	// 2. nix
+	if _, err := exec.LookPath("nix"); err == nil {
+		// Just assuming it's installed; 'nix profile list' is a bit slow and complex to parse.
+		return "nix-managed"
+	}
+
+	// 3. dpkg (for apt-get)
+	if _, err := exec.LookPath("dpkg-query"); err == nil {
+		out, err := exec.CommandContext(ctx, "dpkg-query", "-W", "-f=${Version}", name).Output()
+		if err == nil {
+			return strings.TrimSpace(string(out))
+		}
+	}
+
+	// 4. brew
+	if _, err := exec.LookPath("brew"); err == nil {
+		_, err := exec.CommandContext(ctx, "brew", "info", "--json=v1", name).Output()
+		if err == nil {
+			return "brew-managed"
+		}
+	}
+
+	return "unknown"
 }
 
 // listPipPackages returns pip3-installed packages via JSON output.

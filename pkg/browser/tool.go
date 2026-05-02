@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/nextlevelbuilder/goclaw/internal/bus"
 	"github.com/nextlevelbuilder/goclaw/internal/store"
 	"github.com/nextlevelbuilder/goclaw/internal/tools"
 )
@@ -292,7 +293,13 @@ func (t *BrowserTool) handleScreenshot(ctx context.Context, args map[string]any)
 		return tools.ErrorResult(fmt.Sprintf("failed to save screenshot: %v", err))
 	}
 
-	return &tools.Result{ForLLM: fmt.Sprintf("MEDIA:%s", imagePath)}
+	res := &tools.Result{ForLLM: fmt.Sprintf("MEDIA:%s", imagePath)}
+	res.Media = []bus.MediaFile{{
+		Path:     imagePath,
+		MimeType: "image/png",
+		Filename: filepath.Base(imagePath),
+	}}
+	return res
 }
 
 func (t *BrowserTool) handleNavigate(ctx context.Context, args map[string]any) *tools.Result {

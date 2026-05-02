@@ -99,6 +99,16 @@
     </button>
   </div>
 
+  {#if sse.error}
+    <div class="mt-8 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono uppercase tracking-widest break-words">
+      <div class="font-bold mb-1 flex items-center gap-2">
+        <XCircle class="h-4 w-4 shrink-0" />
+        Error ({sse.error.phase}):
+      </div>
+      <div class="ml-6 opacity-80">{sse.error.detail}</div>
+    </div>
+  {/if}
+
   {#if sse.steps.length > 0}
     <div class="mt-8">
       <OperationProgress steps={sse.steps} elapsed={sse.elapsed} />

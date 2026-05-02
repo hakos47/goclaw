@@ -7,6 +7,7 @@
   import { _ } from "svelte-i18n";
   import { parseBool, DEFAULTS, EMBEDDING_MODELS, DEFAULT_EMBEDDING_MODELS, type InitState } from "./system-settings-constants";
   import ProviderModelSelect from "../shared/ProviderModelSelect.svelte";
+  import Combobox from "../ui/Combobox.svelte";
 
   type Props = {
     open: boolean;
@@ -27,6 +28,7 @@
   
   let embVerifying = $state(false);
   let embResult = $state<any>(null);
+  let showReindexWarning = $state(false);
 
   let toolStatus = $state(true);
   let blockReply = $state(false);
@@ -122,6 +124,17 @@
   }
 
   async function handleSave() {
+    if (!showReindexWarning) {
+      if (embModel !== init.embModel || embMaxChunkLen !== init.embMaxChunkLen) {
+        showReindexWarning = true;
+        return;
+      }
+    }
+    await executeSave();
+  }
+
+  async function executeSave() {
+    showReindexWarning = false;
     saving = true;
     try {
       const http = useHttp();
@@ -173,9 +186,8 @@
   }
 
   let embExtraModels = $derived.by(() => {
-    const selectedProvider = providersState.providers.find(p => p.name === embProvider);
-    const extras = selectedProvider ? (EMBEDDING_MODELS[selectedProvider.provider_type] || DEFAULT_EMBEDDING_MODELS) : DEFAULT_EMBEDDING_MODELS;
-    return extras;
+    // Return exactly the catalog the user requested
+    return DEFAULT_EMBEDDING_MODELS;
   });
 
   let canVerify = $derived(!!embProvider && !!embModel && !embVerifying);
@@ -256,14 +268,21 @@
                     <button 
                         onclick={handleVerifyEmbedding}
                         disabled={!canVerify}
-                        class="h-11 px-8 rounded-2xl bg-blue-600/10 border border-blue-500/30 text-[10px] font-extrabold uppercase tracking-[0.2em] text-blue-400 hover:bg-blue-600/20 hover:text-white transition-all disabled:opacity-5 shadow-[0_0_20px_rgba(59,130,246,0.1)] group/btn"
+                        class="h-14 relative flex items-center justify-center gap-2 px-8 text-[11px] font-black uppercase tracking-[0.3em] rounded-xl transition-all duration-500 overflow-hidden group text-white hover:scale-[1.02] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] border border-white/5 bg-black/80 disabled:opacity-50 disabled:hover:scale-100 disabled:grayscale"
                     >
-                        {#if embVerifying}
-                            <Loader2 class="h-4 w-4 animate-spin mr-2" />
-                            {$_('overview.embedding.verifying', { default: 'Verifying Enlace...' })}
-                        {:else}
-                            {$_('overview.embedding.verifyLink', { default: 'Verify Neural Link' })}
-                        {/if}
+                        <div class="absolute inset-0 bg-gradient-to-t from-blue-500/30 to-transparent border border-blue-500/50 rounded-xl"></div>
+                        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-[2px] bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,1)] rounded-t-full"></div>
+                        <div class="absolute inset-0 opacity-40 blur-xl bg-blue-500 pointer-events-none group-hover:opacity-70 transition-opacity"></div>
+                        <div class="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.1)_50%,transparent_75%)] bg-[length:250%_250%,100%_100%] animate-[shimmer_3s_infinite] opacity-50"></div>
+                        
+                        <span class="relative z-10 flex items-center drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">
+                            {#if embVerifying}
+                                <Loader2 class="h-4 w-4 animate-spin mr-2" />
+                                {$_('overview.embedding.verifying', { default: 'Verifying Enlace...' })}
+                            {:else}
+                                {$_('overview.embedding.verifyLink', { default: 'Verify Neural Link' })}
+                            {/if}
+                        </span>
                     </button>
 
                     {#if embResult}
@@ -296,8 +315,20 @@
                           <label class="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">{$_('overview.embedding.maxChunkLength', { default: 'Max Chunk Length' })}</label>
                           <Info class="h-3 w-3 text-white/10" />
                        </div>
-                       <input type="number" bind:value={embMaxChunkLen} class="w-full h-12 px-5 rounded-2xl bg-white/[0.02] border border-white/10 text-white font-mono text-sm focus:border-blue-500 outline-none transition-all shadow-inner" placeholder={DEFAULTS.embMaxChunkLen} />
-                       <p class="text-[9px] text-white/20 ml-2 italic">{$_('overview.embedding.maxChunkLengthDesc', { default: 'Límite de caracteres por fragmento de memoria.' })}</p>
+                       <div class="relative z-10">
+                         <Combobox
+                             value={String(embMaxChunkLen)}
+                             onChange={(v) => embMaxChunkLen = v}
+                             options={[
+                               { value: "512", label: "512 (Small / Precise)" },
+                               { value: "1000", label: "1000 (Medium / Balanced)" },
+                               { value: "2048", label: "2048 (Large / Contextual)" }
+                             ]}
+                             placeholder="Select Chunk Size..."
+                             allowCustom={false}
+                         />
+                       </div>
+                       <p class="text-[9px] text-white/20 ml-2 italic mt-2">{$_('overview.embedding.maxChunkLengthDesc', { default: 'Límite de caracteres por fragmento de memoria.' })}</p>
                     </div>
                     <div class="space-y-2">
                        <div class="flex items-center gap-2 ml-1">
@@ -507,21 +538,80 @@
           <ExternalLink class="h-4 w-4" /> {$_('overview.systemSettings.advancedConfig', { default: 'Advanced Deployment Config' })}
         </button>
         <div class="flex items-center gap-4">
-          <button onclick={onClose} disabled={saving} class="px-6 py-2.5 rounded-2xl border border-white/5 text-[10px] font-bold uppercase tracking-widest text-white/40 hover:bg-white/5 hover:text-white transition-all disabled:opacity-10">{$_('common.cancel', { default: 'Cancel' })}</button>
-          <button onclick={handleSave} disabled={saving} class="px-10 py-3 rounded-2xl bg-goclaw-neon-purple hover:bg-goclaw-neon-purple/80 text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-[0_0_30px_rgba(139,92,246,0.4)] hover:shadow-[0_0_50px_rgba(139,92,246,0.6)] transition-all duration-500 flex items-center">
-            {#if saving}
-              <Loader2 class="h-4 w-4 animate-spin mr-3" />
-              {$_('common.saving', { default: 'SYNCHRONIZING...' })}
-            {:else}
-              <Save class="h-4 w-4 mr-3" />
-              {$_('overview.systemSettings.neuralCoreChanges', { default: 'APPLY NEURAL CORE CHANGES' })}
-            {/if}
+          <button 
+            onclick={onClose} 
+            disabled={saving} 
+            class="h-14 relative flex items-center justify-center gap-2 px-10 text-[11px] font-black uppercase tracking-[0.3em] rounded-xl transition-all duration-500 overflow-hidden group text-white/50 hover:text-white hover:scale-[1.02] border border-white/10 bg-black/60 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] disabled:opacity-50 disabled:hover:scale-100 min-w-[150px]"
+          >
+            <div class="absolute inset-0 bg-white/5 group-hover:bg-white/10 transition-colors duration-500"></div>
+            <div class="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.05)_50%,transparent_75%)] bg-[length:250%_250%,100%_100%] opacity-0 group-hover:opacity-100 group-hover:animate-[shimmer_3s_infinite]"></div>
+            <span class="relative z-10 group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{$_('common.cancel', { default: 'Cancel' })}</span>
+          </button>
+
+          <button 
+            onclick={handleSave} 
+            disabled={saving} 
+            class="h-14 relative flex items-center justify-center gap-2 px-10 text-[11px] font-black uppercase tracking-[0.3em] rounded-xl transition-all duration-500 overflow-hidden group text-white hover:scale-[1.02] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] border border-white/5 bg-black/80 disabled:opacity-50 disabled:hover:scale-100 disabled:grayscale min-w-[300px]"
+          >
+            <div class="absolute inset-0 bg-gradient-to-t from-goclaw-neon-purple/30 to-transparent border border-goclaw-neon-purple/50 rounded-xl"></div>
+            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-[2px] bg-goclaw-neon-purple shadow-[0_0_15px_rgba(217,70,239,1)] rounded-t-full"></div>
+            <div class="absolute inset-0 opacity-40 blur-xl bg-goclaw-neon-purple pointer-events-none group-hover:opacity-70 transition-opacity"></div>
+            <div class="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.1)_50%,transparent_75%)] bg-[length:250%_250%,100%_100%] animate-[shimmer_3s_infinite] opacity-50"></div>
+            
+            <span class="relative z-10 flex items-center drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">
+              {#if saving}
+                <Loader2 class="h-4 w-4 animate-spin mr-3" />
+                {$_('common.saving', { default: 'SYNCHRONIZING...' })}
+              {:else}
+                <Save class="h-4 w-4 mr-3" />
+                {$_('overview.systemSettings.neuralCoreChanges', { default: 'APPLY NEURAL CORE CHANGES' })}
+              {/if}
+            </span>
           </button>
         </div>
       </div>
 
     </div>
   </div>
+
+  <!-- Re-index Warning Modal -->
+  {#if showReindexWarning}
+    <div class="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+      <div class="bg-[#0a0000] border border-red-500/50 rounded-2xl w-full max-w-lg p-6 shadow-[0_0_50px_rgba(239,68,68,0.15),inset_0_0_20px_rgba(239,68,68,0.1)] relative overflow-hidden">
+        <!-- Neon accent -->
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-red-400 to-red-600 shadow-[0_0_15px_rgba(239,68,68,0.8)]"></div>
+        
+        <div class="flex items-center gap-3 text-red-500 mb-4 mt-2">
+          <AlertTriangle class="h-6 w-6 animate-pulse" />
+          <h3 class="text-lg font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">Critical Warning</h3>
+        </div>
+        
+        <p class="text-white/80 text-sm leading-relaxed mb-6 font-mono bg-red-950/30 p-4 rounded-xl border border-red-500/20">
+          Changing the embedding model or max chunk length requires re-calculating all memory and knowledge graph vectors. This action will temporarily degrade semantic search performance while the background workers rebuild the dimensions. Do you wish to proceed?
+        </p>
+        
+        <div class="flex justify-end gap-3 mt-8">
+          <button 
+            onclick={(e) => { e.stopPropagation(); showReindexWarning = false; }}
+            class="px-5 py-2.5 rounded-xl border border-white/10 text-white/50 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
+          >
+            Cancel
+          </button>
+          <button 
+            onclick={(e) => { e.stopPropagation(); executeSave(); }}
+            disabled={saving}
+            class="px-5 py-2.5 rounded-xl bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30 hover:text-red-300 hover:shadow-[0_0_25px_rgba(239,68,68,0.3)] transition-all text-xs font-bold uppercase tracking-widest flex items-center gap-2"
+          >
+            {#if saving}
+              <Loader2 class="h-4 w-4 animate-spin" /> Proceeding...
+            {:else}
+              <AlertTriangle class="h-4 w-4" /> Proceed
+            {/if}
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 {/if}
 
 <style>

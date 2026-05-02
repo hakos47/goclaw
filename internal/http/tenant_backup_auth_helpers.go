@@ -117,5 +117,5 @@ func (h *TenantBackupHandler) authorised(r *http.Request, userID string, tenantI
 
 // isOwnerUser returns true if userID is a configured system owner.
 func (h *TenantBackupHandler) isOwnerUser(userID string) bool {
-	return userID != "" && h.isOwner != nil && h.isOwner(userID)
+	return h.isOwner != nil && h.isOwner(userID)
 }

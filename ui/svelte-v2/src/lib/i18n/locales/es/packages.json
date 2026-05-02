@@ -1,66 +1,71 @@
 {
-  "title": "Runtime & Packages",
-  "description": "Manage runtimes and installed packages inside the active GoClaw runtime container",
+  "title": "Entorno y Paquetes",
+  "description": "Gestiona entornos de ejecución y paquetes instalados dentro del contenedor activo de GoClaw",
+  "pageTitle": "Gestor de Paquetes",
+  "pageSubtitle": "Sistema, PIP, NPM y Binarios",
+  "refresh": "Actualizar",
   "runtimes": {
-    "title": "Runtimes",
-    "scopeTitle": "Container-scoped runtime status",
-    "scopeDesc": "These checks run inside the active GoClaw runtime container. Host-installed runtimes, shell profile changes, and nvm-managed binaries are not used here.",
-    "minimalImageHint": "The published latest image is minimal, so missing Python or Node runtimes can be expected there. Use the python, node, or full image variant, rebuild with ENABLE_PYTHON=true / ENABLE_NODE=true / ENABLE_FULL_SKILLS=true, or install runtimes manually in this container.",
-    "available": "Available",
-    "missing": "Missing",
-    "missingInContainer": "Missing in container"
+    "title": "Entornos de Ejecución",
+    "scopeTitle": "Estado del entorno en el contenedor",
+    "scopeDesc": "Estas comprobaciones se ejecutan dentro del contenedor activo de GoClaw. Los entornos instalados en el host no se utilizan aquí.",
+    "minimalWarning": "Advertencia de Contenedor Minimalista",
+    "minimalImageHint": "La imagen publicada es minimalista, por lo que es normal que falten entornos como Python o Node. Usa la variante de imagen completa, reconstruye con ENABLE_PYTHON=true / ENABLE_NODE=true, o instala los entornos manualmente.",
+    "available": "Disponible",
+    "missing": "Falta",
+    "missingInContainer": "No instalado en el contenedor",
+    "installed": "Instalado"
   },
   "system": {
-    "title": "System Packages",
-    "placeholder": "Package name (e.g. github-cli)"
+    "title": "Paquetes del Sistema",
+    "placeholder": "Nombre del paquete (ej. nmap, jq, curl)"
   },
   "pip": {
-    "title": "Python Packages",
-    "placeholder": "Package name (e.g. pandas)"
+    "title": "Paquetes PIP (Python)",
+    "placeholder": "Nombre del paquete (ej. requests)"
   },
   "npm": {
-    "title": "Node Packages",
-    "placeholder": "Package name (e.g. typescript)"
+    "title": "Paquetes NPM (Node)",
+    "placeholder": "Nombre del paquete (ej. axios)"
   },
   "github": {
-    "title": "GitHub Binaries",
-    "placeholder": "owner/repo[@tag] (e.g. cli/cli@v2.45.0)",
-    "browse": "Browse releases",
-    "muslWarning": "Alpine Linux uses musl libc. Binaries compiled against glibc may fail at runtime. Prefer static or musl-compatible releases.",
-    "muslDismiss": "Dismiss",
-    "pickerTitle": "Select release from {repo}",
-    "pickerEmpty": "No releases found for {repo}",
-    "pickerLoading": "Loading releases...",
-    "pickerMatchingAssets": "{count} matching / {total} total",
-    "pickerPrerelease": "Pre-release",
-    "pickerSelect": "Select",
+    "title": "Binarios de GitHub",
+    "placeholder": "owner/repo[@tag] (ej. cli/cli)",
+    "browse": "Explorar versiones",
+    "muslWarning": "Alpine Linux usa musl libc. Binarios para glibc pueden fallar.",
+    "muslDismiss": "Ocultar",
+    "pickerTitle": "Seleccionar versión de {repo}",
+    "pickerEmpty": "No hay versiones para {repo}",
+    "pickerLoading": "Cargando versiones...",
+    "pickerMatchingAssets": "{count} compatibles / {total} total",
+    "pickerPrerelease": "Pre-lanzamiento",
+    "pickerSelect": "Seleccionar",
     "columns": {
-      "repo": "Repository",
-      "tag": "Version",
-      "binaries": "Binaries",
-      "installedAt": "Installed"
+      "repo": "Repositorio",
+      "tag": "Versión",
+      "binaries": "Binarios",
+      "installedAt": "Instalado"
     }
   },
   "actions": {
-    "install": "Install",
-    "uninstall": "Uninstall",
-    "installing": "Installing...",
-    "uninstalling": "Removing..."
+    "install": "Instalar",
+    "uninstall": "Desinstalar",
+    "installing": "Instalando...",
+    "uninstalling": "Eliminando..."
   },
   "messages": {
-    "installSuccess": "{name} installed successfully",
-    "installError": "Failed to install {name}",
-    "uninstallSuccess": "{name} removed successfully",
-    "uninstallError": "Failed to remove {name}"
+    "installSuccess": "{name} instalado correctamente",
+    "installError": "Error al instalar {name}",
+    "uninstallSuccess": "{name} eliminado correctamente",
+    "uninstallError": "Error al eliminar {name}"
   },
   "confirmUninstall": {
-    "title": "Confirm Uninstall",
-    "description": "Are you sure you want to remove {name}? This action cannot be undone."
+    "title": "Confirmar Desinstalación",
+    "description": "¿Seguro que deseas eliminar {name}? Esta acción no se puede deshacer."
   },
   "table": {
-    "name": "Name",
-    "version": "Version",
-    "actions": "Actions",
-    "empty": "No packages installed"
+    "name": "Nombre",
+    "version": "Versión",
+    "actions": "Acciones",
+    "empty": "No hay paquetes instalados en este ecosistema."
   }
 }

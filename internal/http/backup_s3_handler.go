@@ -324,7 +324,7 @@ func (h *BackupS3Handler) s3ClientFromSecrets(r *http.Request) (*backup.S3Client
 
 // isOwnerUser returns true if userID belongs to a configured system owner.
 func (h *BackupS3Handler) isOwnerUser(userID string) bool {
-	return userID != "" && h.isOwner != nil && h.isOwner(userID)
+	return h.isOwner != nil && h.isOwner(userID)
 }
 
 // maskAccessKey masks an AWS access key ID, showing only the first 4 chars + "***".

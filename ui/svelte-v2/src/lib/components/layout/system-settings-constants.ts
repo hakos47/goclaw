@@ -27,7 +27,13 @@ export const EMBEDDING_MODELS: Record<string, { id: string; name: string }[]> = 
   ],
 };
 
-export const DEFAULT_EMBEDDING_MODELS: { id: string; name: string }[] = [];
+export const DEFAULT_EMBEDDING_MODELS: { id: string; name: string }[] = [
+  { id: "text-embedding-ada-002", name: "OpenAI text-embedding-ada-002 [1536d]" },
+  { id: "text-embedding-3-small", name: "OpenAI text-embedding-3-small [1536d]" },
+  { id: "arctic-embed2", name: "Snowflake arctic-embed2 [1024d]" },
+  { id: "nomic-embed-text", name: "Nomic Embed Text (Ollama) [768d]" },
+  { id: "embed-english-v3.0", name: "Cohere Embed English v3 [1024d]" }
+];
 
 export interface InitState {
   embProvider: string;

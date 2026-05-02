@@ -10,12 +10,13 @@ ARG ENABLE_EMBEDUI=false
 FROM node:22-alpine AS web-builder
 RUN corepack enable && corepack prepare pnpm@10.28.2 --activate
 WORKDIR /app
-# Copy .npmrc first so pnpm resolves musl native bindings (needed on Alpine).
-# The lockfile already includes musl entries thanks to supportedArchitectures in .npmrc.
-COPY ui/web/.npmrc ui/web/package.json ui/web/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-COPY ui/web/ .
-RUN pnpm build
+# We need both ui/svelte-v2 and ui/web because svelte-v2 imports types from web.
+# Using subdirectories ensures relative paths (e.g., ../web) work during build.
+COPY ui/svelte-v2/.npmrc ui/svelte-v2/package.json ui/svelte-v2/pnpm-lock.yaml ./ui/svelte-v2/
+RUN cd ui/svelte-v2 && pnpm install --frozen-lockfile
+COPY ui/web/ ./ui/web/
+COPY ui/svelte-v2/ ./ui/svelte-v2/
+RUN cd ui/svelte-v2 && pnpm build && mv dist /app/dist
 
 # ── Stage selector: pick web-builder output or empty dir ──
 FROM web-builder AS embedui-true
@@ -84,7 +85,7 @@ COPY docker/requirements-base.txt docker/requirements-skills.txt /tmp/
 # ENABLE_FULL_SKILLS=true pre-installs all skill deps (larger image, no on-demand install needed).
 # Otherwise, skill packages are installed on-demand via the admin UI.
 RUN set -eux; \
-    apk add --no-cache ca-certificates wget su-exec; \
+    apk add --no-cache ca-certificates wget su-exec dumb-init chromium harfbuzz nss freetype ttf-freefont; \
     if [ "$ENABLE_SANDBOX" = "true" ]; then \
         apk add --no-cache docker-cli; \
     fi; \

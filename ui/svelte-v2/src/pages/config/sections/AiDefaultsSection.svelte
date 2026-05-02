@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { BrainCircuit, Settings2, Shield, Search, Database, Layers, Save, Loader2 } from "lucide-svelte";
+  import { BrainCircuit, Settings2, Shield, Search, Database, Layers, Save, Loader2, AlertTriangle } from "lucide-svelte";
   import { _ } from "svelte-i18n";
   import FormGroup from "../components/FormGroup.svelte";
   import { patchConfig, configStore } from "$lib/state/config.svelte";
+  import Combobox from "$lib/components/ui/Combobox.svelte";
 
   let saving = $derived(configStore.saving);
   let config = $derived(configStore.config || {});
@@ -31,6 +32,11 @@
   let memoryMinScore = $state(0.0);
   let memoryMaxChunkLen = $state(0);
   let memoryChunkOverlap = $state(0);
+
+  let initialMemoryModel = $state("");
+  let initialMemoryMaxChunkLen = $state(0);
+  let hasInitialized = $state(false);
+  let showReindexWarning = $state(false);
 
   // Compaction
   let reserveTokensFloor = $state(0);
@@ -76,6 +82,12 @@
       memoryMaxChunkLen = mem.max_chunk_len || 1000;
       memoryChunkOverlap = mem.chunk_overlap || 200;
 
+      if (!hasInitialized) {
+        initialMemoryModel = memoryModel;
+        initialMemoryMaxChunkLen = memoryMaxChunkLen;
+        hasInitialized = true;
+      }
+
       const comp = def.compaction || {};
       reserveTokensFloor = comp.reserveTokensFloor || 20000;
       maxHistoryShare = comp.maxHistoryShare || 0.75;
@@ -95,6 +107,17 @@
   });
 
   async function handleSave() {
+    if (hasInitialized && !showReindexWarning) {
+      if (memoryModel !== initialMemoryModel || memoryMaxChunkLen !== initialMemoryMaxChunkLen) {
+        showReindexWarning = true;
+        return;
+      }
+    }
+    await executeSave();
+  }
+
+  async function executeSave() {
+    showReindexWarning = false;
     const ag = config.agents || {};
     await patchConfig({
       agents: {
@@ -143,6 +166,10 @@
         }
       }
     });
+    
+    // Update initials after successful save
+    initialMemoryModel = memoryModel;
+    initialMemoryMaxChunkLen = memoryMaxChunkLen;
   }
 </script>
 
@@ -277,8 +304,20 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-[9px] text-white/40 uppercase tracking-widest mb-2 ml-1">{$_("config.agents.memory.maxChunkLen")}</label>
-              <input type="number" bind:value={memoryMaxChunkLen} class="w-full h-11 px-4 bg-[#0a0a0a] border border-white/10 rounded-xl text-white font-mono text-sm outline-none focus:border-orange-500/50 transition-colors" />
-              <p class="text-[9px] text-white/30 mt-1 ml-1 leading-relaxed">{$_("config.agents.memory.maxChunkLenTip")}</p>
+              <div class="relative z-10 w-full">
+                <Combobox
+                  value={String(memoryMaxChunkLen)}
+                  onChange={(v) => memoryMaxChunkLen = Number(v)}
+                  options={[
+                    { value: "512", label: "512 (Small / Precise)" },
+                    { value: "1000", label: "1000 (Medium / Balanced)" },
+                    { value: "2048", label: "2048 (Large / Contextual)" }
+                  ]}
+                  placeholder="Select Chunk Size..."
+                  allowCustom={false}
+                />
+              </div>
+              <p class="text-[9px] text-white/30 mt-2 ml-1 leading-relaxed">{$_("config.agents.memory.maxChunkLenTip")}</p>
             </div>
             <div>
               <label class="block text-[9px] text-white/40 uppercase tracking-widest mb-2 ml-1">{$_("config.agents.memory.chunkOverlap")}</label>
@@ -359,3 +398,42 @@
     
   </div>
 </div>
+
+<!-- Re-index Warning Modal -->
+{#if showReindexWarning}
+  <div class="fixed inset-0 z-[100] flex items-center justify-center bg-[#030014]/90 backdrop-blur-md p-4 animate-in fade-in duration-300">
+    <div class="bg-[#0a0000] border border-red-500/50 rounded-2xl w-full max-w-lg p-6 shadow-[0_0_50px_rgba(239,68,68,0.15),inset_0_0_20px_rgba(239,68,68,0.1)] relative overflow-hidden">
+      <!-- Neon accent -->
+      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-red-400 to-red-600 shadow-[0_0_15px_rgba(239,68,68,0.8)]"></div>
+      
+      <div class="flex items-center gap-3 text-red-500 mb-4 mt-2">
+        <AlertTriangle class="h-6 w-6 animate-pulse" />
+        <h3 class="text-lg font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">Critical Warning</h3>
+      </div>
+      
+      <p class="text-white/80 text-sm leading-relaxed mb-6 font-mono bg-red-950/30 p-4 rounded-xl border border-red-500/20">
+        Changing the embedding model or max chunk length requires re-calculating all memory and knowledge graph vectors. This action will temporarily degrade semantic search performance while the background workers rebuild the dimensions. Do you wish to proceed?
+      </p>
+      
+      <div class="flex justify-end gap-3 mt-8">
+        <button 
+          onclick={() => showReindexWarning = false}
+          class="px-5 py-2.5 rounded-xl border border-white/10 text-white/50 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
+        >
+          Cancel
+        </button>
+        <button 
+          onclick={executeSave}
+          disabled={saving}
+          class="px-5 py-2.5 rounded-xl bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30 hover:text-red-300 hover:shadow-[0_0_25px_rgba(239,68,68,0.3)] transition-all text-xs font-bold uppercase tracking-widest flex items-center gap-2"
+        >
+          {#if saving}
+            <Loader2 class="h-4 w-4 animate-spin" /> Proceeding...
+          {:else}
+            <AlertTriangle class="h-4 w-4" /> Proceed
+          {/if}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}

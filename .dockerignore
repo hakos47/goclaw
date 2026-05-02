@@ -21,6 +21,9 @@ ui/simple-saas/
 !ui/web/
 ui/web/node_modules/
 ui/web/dist/
+!ui/svelte-v2/
+ui/svelte-v2/node_modules/
+ui/svelte-v2/dist/
 plans/
 skills-store/
 **/node_modules/

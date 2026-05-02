@@ -3,6 +3,10 @@ package providers
 // OpenAI API response types (internal)
 
 type openAIResponse struct {
+	BaseResp *struct {
+		StatusCode int    `json:"status_code"`
+		StatusMsg  string `json:"status_msg"`
+	} `json:"base_resp,omitempty"`
 	Choices []openAIChoice `json:"choices"`
 	Usage   *openAIUsage   `json:"usage,omitempty"`
 }

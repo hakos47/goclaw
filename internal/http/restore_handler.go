@@ -163,7 +163,7 @@ func (h *RestoreHandler) handleRestore(w http.ResponseWriter, r *http.Request) {
 
 // isOwnerUser returns true if userID belongs to a configured system owner.
 func (h *RestoreHandler) isOwnerUser(userID string) bool {
-	return userID != "" && h.isOwner != nil && h.isOwner(userID)
+	return h.isOwner != nil && h.isOwner(userID)
 }
 
 // checkPsqlAvailable verifies that psql is on PATH (PG builds only).

@@ -4,6 +4,7 @@
   import { wsState } from "$lib/state/ws.svelte";
   import { fade } from "svelte/transition";
   import PackageSection from "./components/PackageSection.svelte";
+  import { _ } from "svelte-i18n";
 
   let hasFetched = false;
   $effect(() => {
@@ -67,11 +68,11 @@
       <div>
         <div class="flex items-center gap-3">
           <h1 class="text-2xl font-black tracking-widest text-white uppercase drop-shadow-md">
-            Package Manager
+            {$_("packages.pageTitle")}
           </h1>
         </div>
         <p class="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mt-1">
-          System, PIP, NPM & Binaries
+          {$_("packages.pageSubtitle")}
         </p>
       </div>
     </div>
@@ -83,7 +84,7 @@
         class="group flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:bg-white/10 transition-all shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)] disabled:opacity-50"
       >
         <RefreshCw class={`h-4 w-4 text-white/50 group-hover:text-white ${packagesStore.loadingPackages ? 'animate-spin' : ''}`} />
-        <span class="text-[10px] font-black uppercase tracking-widest text-white/70">Refresh</span>
+        <span class="text-[10px] font-black uppercase tracking-widest text-white/70">{$_("packages.refresh")}</span>
       </button>
     </div>
   </div>
@@ -91,7 +92,7 @@
   <!-- Container Runtimes Status -->
   <div class="mb-8">
     <h2 class="text-xs font-black uppercase tracking-[0.3em] text-indigo-400 mb-3 ml-2 flex items-center gap-2">
-      <Server class="h-4 w-4" /> Container Runtimes
+      <Server class="h-4 w-4" /> {$_("packages.runtimes.title")}
     </h2>
     
     {#if packagesStore.loadingRuntimes && !packagesStore.runtimes}
@@ -102,8 +103,8 @@
         <div class="mb-4 p-4 rounded-xl bg-sky-500/10 border border-sky-500/20 flex gap-3 items-start">
           <AlertTriangle class="h-5 w-5 text-sky-400 shrink-0" />
           <div>
-            <h3 class="text-[10px] font-black uppercase tracking-widest text-sky-300">Minimal Container Warning</h3>
-            <p class="text-xs text-sky-200/70 mt-1">Some execution runtimes are missing. To run agents that require these languages, you must rebuild your Claw agent container with a heavier base image.</p>
+            <h3 class="text-[10px] font-black uppercase tracking-widest text-sky-300">{$_("packages.runtimes.minimalWarning")}</h3>
+            <p class="text-xs text-sky-200/70 mt-1">{$_("packages.runtimes.minimalImageHint")}</p>
           </div>
         </div>
       {/if}
@@ -120,7 +121,7 @@
               {/if}
             </div>
             <span class="text-[10px] font-mono text-white/50 truncate">
-              {rt.version || (rt.available ? "Installed" : "Missing from container")}
+              {rt.version || (rt.available ? $_("packages.runtimes.installed") : $_("packages.runtimes.missingInContainer"))}
             </span>
           </div>
         {/each}
@@ -131,8 +132,8 @@
   <!-- Package Ecosystems Grid -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <PackageSection
-      title="System Packages"
-      placeholder="e.g. nmap, jq, curl"
+      title={$_("packages.system.title")}
+      placeholder={$_("packages.system.placeholder")}
       packages={packagesStore.packages?.system}
       loading={packagesStore.loadingPackages}
       onInstall={handleSystemInstall}
@@ -141,8 +142,8 @@
     />
 
     <PackageSection
-      title="PIP Packages (Python)"
-      placeholder="e.g. requests, beautifulsoup4"
+      title={$_("packages.pip.title")}
+      placeholder={$_("packages.pip.placeholder")}
       packages={packagesStore.packages?.pip}
       loading={packagesStore.loadingPackages}
       onInstall={handlePipInstall}
@@ -151,8 +152,8 @@
     />
 
     <PackageSection
-      title="NPM Packages (Node)"
-      placeholder="e.g. axios, lodash"
+      title={$_("packages.npm.title")}
+      placeholder={$_("packages.npm.placeholder")}
       packages={packagesStore.packages?.npm}
       loading={packagesStore.loadingPackages}
       onInstall={handleNpmInstall}
@@ -161,8 +162,8 @@
     />
 
     <PackageSection
-      title="GitHub Binaries"
-      placeholder="e.g. jqlang/jq"
+      title={$_("packages.github.title")}
+      placeholder={$_("packages.github.placeholder")}
       packages={packagesStore.packages?.github}
       loading={packagesStore.loadingPackages}
       onInstall={handleGithubInstall}

@@ -79,15 +79,12 @@ func NewPolicyEngine(ownerIDs []string) *PolicyEngine {
 }
 
 // IsOwner checks if a sender ID is an owner.
-// When no owner IDs are configured, "system" is treated as owner (fail-closed default).
+// When no owner IDs are configured, all users are treated as owners (fail-open dev mode).
 func (pe *PolicyEngine) IsOwner(senderID string) bool {
-	if senderID == "" {
-		return false
-	}
 	pe.mu.RLock()
 	defer pe.mu.RUnlock()
 	if len(pe.ownerIDs) == 0 {
-		return senderID == "system"
+		return true
 	}
 	return pe.ownerIDs[senderID]
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
-  import { Search, Loader2 } from "lucide-svelte";
+  import { Search, Loader2, X } from "lucide-svelte";
   import type { FieldDef } from "../channel-schemas";
   import { useWs } from "$lib/state/ws.svelte";
   import { Methods } from "$lib/api/protocol";

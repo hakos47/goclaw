@@ -11,7 +11,7 @@ build:
 # Build with embedded web UI (recommended for production)
 build-full: check-web
 	rm -rf internal/webui/dist && mkdir -p internal/webui/dist
-	cp -r ui/web/dist/* internal/webui/dist/
+	cp -r ui/svelte-v2/dist/* internal/webui/dist/
 	CGO_ENABLED=0 go build -tags embedui -ldflags="$(LDFLAGS)" -o $(BINARY) .
 
 # Build with TUI (Bubble Tea enhanced CLI)
@@ -31,7 +31,7 @@ version:
 # ── Docker Compose ──
 # Default: backend (with embedded web UI) + Postgres. No separate nginx needed.
 # Add WITH_WEB_NGINX=1 for separate nginx on :3000 (custom SSL, reverse proxy).
-COMPOSE_BASE = docker compose -f docker-compose.yml -f docker-compose.postgres.yml
+COMPOSE_BASE = POSTGRES_PORT=5434 docker compose -f docker-compose.yml -f docker-compose.postgres.yml
 ifdef WITH_WEB_NGINX
 COMPOSE_BASE += -f docker-compose.selfservice.yml
 export ENABLE_EMBEDUI=false
@@ -56,7 +56,7 @@ ifdef WITH_CLAUDE_CLI
 COMPOSE_EXTRA += -f docker-compose.claude-cli.yml
 endif
 COMPOSE = $(COMPOSE_BASE) $(COMPOSE_EXTRA)
-UPGRADE = docker compose -f docker-compose.yml -f docker-compose.postgres.yml -f docker-compose.upgrade.yml
+UPGRADE = POSTGRES_PORT=5434 docker compose -f docker-compose.yml -f docker-compose.postgres.yml -f docker-compose.upgrade.yml
 
 version-file:
 	@echo $(VERSION) > VERSION
@@ -125,17 +125,17 @@ vet:
 	go vet ./...
 
 check-web:
-	cd ui/web && pnpm install --frozen-lockfile && pnpm build
+	cd ui/svelte-v2 && pnpm install --frozen-lockfile && pnpm build
 
 dev:
-	cd ui/web && pnpm dev
+	cd ui/svelte-v2 && pnpm dev
 
 migrate:
 	$(COMPOSE) run --rm goclaw migrate up
 
 setup:
 	go mod download
-	cd ui/web && pnpm install --frozen-lockfile
+	cd ui/svelte-v2 && pnpm install --frozen-lockfile
 
 ci: build test vet check-web
 

@@ -1,13 +1,14 @@
 <script lang="ts">
   import { 
     Globe, Clock, Settings2, User, Check, Building2, 
-    KeyRound, Info, LogOut, Target, LifeBuoy, Briefcase, TrendingUp, Menu
+    KeyRound, Info, LogOut, Target, LifeBuoy, Briefcase, TrendingUp, Menu, Fingerprint
   } from "lucide-svelte";
   import { uiState, setTimezone, TIMEZONE_OPTIONS, toggleMobileMenu } from "../state/ui.svelte";
   import { wsState, useWsCall } from "../state/ws.svelte";
   import { authState, logout } from "../state/auth.svelte";
   import { locale, _ } from "svelte-i18n";
   import { onMount } from "svelte";
+  import { registerWebAuthn } from "../utils/webauthn";
 
   type Props = {
     onOpenSettings: () => void;
@@ -42,6 +43,16 @@
       localStorage.setItem("goclaw:tenant_hint", slug);
     }
     window.location.reload();
+  }
+
+  async function handleAddPasskey() {
+    try {
+      await registerWebAuthn();
+      alert("✅ Biometric Device Registered Successfully!");
+    } catch (e: any) {
+      console.error(e);
+      alert("❌ Failed to register biometric device: " + (e.message || "Unknown error"));
+    }
   }
 
   let currentLangName = $derived(languages.find(l => l.code === $locale)?.name || "English");
@@ -79,6 +90,7 @@
     { id: 'lang', icon: Globe, label: currentLangName, action: () => activeSubmenu = activeSubmenu === 'lang' ? null : 'lang', color: 'text-blue-400' },
     { id: 'tz', icon: Clock, label: currentTzLabel, action: () => activeSubmenu = activeSubmenu === 'tz' ? null : 'tz', color: 'text-amber-400' },
     ...(isMultiTenant ? [{ id: 'tenant', icon: Building2, label: tenantLabel || 'Tenants', action: () => activeSubmenu = activeSubmenu === 'tenant' ? null : 'tenant', color: 'text-goclaw-neon-cyan' }] : []),
+    { id: 'passkey', icon: Fingerprint, label: 'Add Passkey', action: handleAddPasskey, color: 'text-green-400' },
     { id: 'apikeys', icon: KeyRound, label: 'API Keys', action: () => window.location.href = '/api-keys', color: 'text-goclaw-neon-purple' },
     { id: 'logout', icon: LogOut, label: 'Logout', action: logout, color: 'text-red-400' }
   ]);

@@ -9,7 +9,8 @@ Always respond in the same language as the user's prompt. If the user writes in 
 ## Tech Stack
 
 **Backend:** Go 1.26, Cobra CLI, gorilla/websocket, pgx/v5 (database/sql, no ORM), golang-migrate, go-rod/rod, telego (Telegram)
-**Web UI:** React 19, Vite 6, TypeScript, Tailwind CSS 4, Radix UI, Zustand, React Router 7. Located in `ui/web/`. **Use `pnpm` (not npm).**
+**Web UI (Primary):** Svelte 5.55, Vite 6, TypeScript, Tailwind CSS 4. Located in `ui/svelte-v2/`. **Use `pnpm`.**
+**Web UI (Legacy):** React 19, Vite 6, TypeScript, Tailwind CSS 4, Radix UI, Zustand, React Router 7. Located in `ui/web/`. **Use `pnpm`.**
 **Desktop UI:** React 19, Vite 6, TypeScript, Tailwind CSS 4, Zustand, Framer Motion. Located in `ui/desktop/frontend/`. **Use `pnpm`.**
 **Desktop App:** Wails v2 (`//go:build sqliteonly`). Located in `ui/desktop/`. Embeds gateway + React frontend in single binary.
 **Database:** PostgreSQL 18 with pgvector (standard). SQLite via `modernc.org/sqlite` (desktop/lite). Raw SQL with `$1, $2` (PG) or `?` (SQLite) positional params. Nullable columns: `*string`, `*time.Time`, etc.
@@ -107,7 +108,8 @@ make test-contracts   # P1 - API schemas (requires server)
 make test-scenarios   # P2 - user journeys (requires server)
 make test-critical    # P0 + P1 (pre-merge)
 
-cd ui/web && pnpm install && pnpm dev   # Web dashboard (dev)
+cd ui/svelte-v2 && pnpm install && pnpm dev   # Web dashboard (Primary Svelte 5)
+cd ui/web && pnpm install && pnpm dev         # Web dashboard (Legacy React)
 
 # Desktop (Wails + SQLite)
 cd ui/desktop && wails dev -tags sqliteonly  # Dev mode with hot reload (direct)

@@ -15,12 +15,14 @@
     Activity,
     Zap,
     History,
-    Terminal
+    Terminal,
+    Smartphone
   } from "lucide-svelte";
 
   import { _ } from "svelte-i18n";
   import { cn } from "$lib/utils";
   import { wsState } from "$lib/state/ws.svelte";
+  import { toast } from "$lib/components/ui/toast/toast.svelte";
   import { useChannels } from "./hooks/use-channels.svelte";
   import { agentsState, loadAgents } from "../agents/hooks/use-agents.svelte";
   import type { ChannelInstanceData } from "$lib/types/channel";
@@ -30,6 +32,7 @@
   import ChannelDiagnosticsCard from "./components/ChannelDiagnosticsCard.svelte";
   import ChannelAdvancedDialog from "./components/ChannelAdvancedDialog.svelte";
   import WhatsAppReauthDialog from "./whatsapp/WhatsAppReauthDialog.svelte";
+  import WhatsAppPairingTab from "./whatsapp/WhatsAppPairingTab.svelte";
   import ZaloReauthDialog from "./zalo/ZaloReauthDialog.svelte";
   import { credentialsSchema, configSchema } from "./channel-schemas";
   import { 
@@ -61,6 +64,7 @@
   let activeTab = $state("general");
   let showAdvanced = $state(false);
   let reauthOpen = $state(false);
+  let testing = $state(false);
 
   // Form states
   let displayName = $state("");
@@ -170,12 +174,28 @@
   }
 
   async function handleTest() {
-    if (!instance) return;
-    if (instance.channel_type === 'whatsapp' || instance.channel_type === 'zalo_personal') {
-      reauthOpen = true;
-    } else {
-      // For others, just refresh status for now
-      await channels.loadStatus();
+    if (!instance || testing) return;
+    testing = true;
+    try {
+      // Force a fresh status check from the engine
+      await Promise.all([
+        channels.loadStatus(),
+        // Add a small artificial delay so the user sees the button reacting
+        new Promise(r => setTimeout(r, 600))
+      ]);
+      
+      const newStatus = channels.channelsStatus[instance.name];
+      if (newStatus?.state === 'healthy') {
+        toast.success(`Connection verified: ${instance.display_name || instance.name} is operational`);
+      } else if (newStatus?.state === 'failed' || newStatus?.failure_kind) {
+        toast.error(`Channel degraded: ${newStatus.summary || "Connectivity issues detected"}`);
+      } else {
+        toast.info(`Status updated: ${newStatus?.state || 'Unknown state'}`);
+      }
+    } catch (e: any) {
+      toast.error(`Test failed: ${e.message || "Could not reach engine"}`);
+    } finally {
+      testing = false;
     }
   }
 
@@ -208,6 +228,10 @@
 
     if (instance?.channel_type === 'telegram') {
       t.splice(2, 0, { id: "groups", label: "Groups", icon: Users });
+    }
+
+    if (instance?.channel_type === 'whatsapp') {
+      t.splice(2, 0, { id: "pairing", label: "Pairing", icon: Smartphone });
     }
 
     t.push({ id: "diagnostics", label: "Diagnostics", icon: AlertCircle });
@@ -305,10 +329,16 @@
 
       <button 
         onclick={handleTest}
-        class="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/5 transition-all"
+        disabled={testing}
+        class="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/5 transition-all disabled:opacity-50"
       >
-        <Play class="w-3.5 h-3.5 text-goclaw-neon-cyan" />
-        Test
+        {#if testing}
+          <Loader2 class="w-3.5 h-3.5 text-goclaw-neon-cyan animate-spin" />
+          Testing...
+        {:else}
+          <Play class="w-3.5 h-3.5 text-goclaw-neon-cyan" />
+          Test
+        {/if}
       </button>
 
       <button 
@@ -516,6 +546,13 @@
               await loadData();
             }}
           />
+        {:else if activeTab === 'pairing'}
+          {#if instance.channel_type === 'whatsapp'}
+            <WhatsAppPairingTab 
+              instanceId={id} 
+              onSuccess={() => channels.loadStatus()} 
+            />
+          {/if}
         {:else if activeTab === 'diagnostics'}
           <div class="grid gap-6">
             <!-- Main Health Card -->

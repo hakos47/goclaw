@@ -144,9 +144,10 @@
     ></button>
 
     <!-- Dialog -->
-    <div class="relative w-full max-w-2xl bg-[#030014]/95 border border-white/10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05)] overflow-hidden animate-in fade-in zoom-in duration-300 flex flex-col max-h-[90vh]">
+    <div class="relative w-full max-w-2xl bg-[#030014]/80 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.9),inset_0_1px_1px_rgba(255,255,255,0.05)] overflow-hidden animate-in fade-in zoom-in duration-300 flex flex-col max-h-[90vh]">
       <!-- Glow Effects -->
-      <div class="absolute top-0 right-0 w-64 h-64 bg-goclaw-neon-purple/10 rounded-full blur-[80px] pointer-events-none"></div>
+      <div class="absolute top-0 right-0 w-80 h-80 bg-goclaw-neon-purple/10 rounded-full blur-[100px] pointer-events-none"></div>
+      <div class="absolute bottom-0 left-0 w-64 h-64 bg-goclaw-neon-cyan/5 rounded-full blur-[80px] pointer-events-none"></div>
       <div class="absolute bottom-0 left-0 w-48 h-48 bg-goclaw-neon-cyan/5 rounded-full blur-[60px] pointer-events-none"></div>
 
       <!-- Header -->
@@ -186,9 +187,12 @@
                 {@const isActive = channelType === type.value}
                 <button 
                   onclick={() => channelType = type.value}
-                  class={`relative flex items-center gap-3 p-4 rounded-2xl border transition-all duration-500 group ${isActive ? 'bg-white/5 border-goclaw-neon-purple shadow-[0_0_20px_rgba(217,70,239,0.1)]' : 'bg-white/[0.02] border-white/5 hover:border-white/10'}`}
+                  class={`relative flex items-center gap-3 p-4 rounded-2xl border transition-all duration-500 group overflow-hidden ${isActive ? 'bg-goclaw-neon-purple/5 border-goclaw-neon-purple/50 shadow-[0_0_20px_rgba(217,70,239,0.2)]' : 'bg-black/60 border-white/5 hover:border-white/10 hover:bg-black/80'}`}
                 >
-                  <div class={`p-2 rounded-lg bg-[#030014] border border-white/10 group-hover:scale-110 transition-transform ${isActive ? 'border-goclaw-neon-purple/50' : ''}`}>
+                  {#if isActive}
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite] pointer-events-none"></div>
+                  {/if}
+                  <div class={`relative z-10 p-2 rounded-lg bg-black border group-hover:scale-110 transition-transform ${isActive ? 'border-goclaw-neon-purple/50 shadow-[0_0_15px_rgba(217,70,239,0.3)]' : 'border-white/5'}`}>
                     <type.icon class={`w-4 h-4 ${isActive ? type.color : 'text-white/20'}`} />
                   </div>
                   <span class={`text-[10px] font-bold uppercase tracking-widest ${isActive ? 'text-white' : 'text-white/40'}`}>{type.label}</span>
@@ -211,7 +215,7 @@
                 type="text" 
                 bind:value={name}
                 placeholder="e.g. main_wa"
-                class="w-full bg-[#030014] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-goclaw-neon-purple focus:ring-1 focus:ring-goclaw-neon-purple/30 transition-all outline-none text-white placeholder:text-white/10"
+                class="w-full bg-black/80 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-goclaw-neon-purple focus:ring-1 focus:ring-goclaw-neon-purple/50 transition-all outline-none text-white placeholder:text-white/20 shadow-inner"
               />
             </div>
             <div class="space-y-2">
@@ -223,7 +227,7 @@
                 type="text" 
                 bind:value={displayName}
                 placeholder="e.g. Sales WhatsApp"
-                class="w-full bg-[#030014] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-goclaw-neon-purple focus:ring-1 focus:ring-goclaw-neon-purple/30 transition-all outline-none text-white placeholder:text-white/10"
+                class="w-full bg-black/80 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-goclaw-neon-purple focus:ring-1 focus:ring-goclaw-neon-purple/50 transition-all outline-none text-white placeholder:text-white/20 shadow-inner"
               />
             </div>
           </div>
@@ -236,7 +240,7 @@
             </label>
             <select 
               bind:value={agentId}
-              class="w-full bg-[#030014] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-goclaw-neon-purple transition-all outline-none text-white appearance-none"
+              class="w-full bg-black/80 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-goclaw-neon-purple focus:ring-1 focus:ring-goclaw-neon-purple/50 transition-all outline-none text-white appearance-none shadow-inner"
             >
               <option value="" disabled>Select an agent to handle this channel</option>
               {#each agentsState.agents as agent}
@@ -293,9 +297,10 @@
         <button 
           onclick={handleSubmit}
           disabled={loading}
-          class="relative flex items-center gap-2 px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl overflow-hidden group shadow-[0_0_20px_rgba(217,70,239,0.3)] disabled:opacity-50"
+          class="relative flex items-center gap-2 px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl overflow-hidden group shadow-[0_0_20px_rgba(217,70,239,0.3)] transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
         >
-          <div class="absolute inset-0 bg-gradient-to-t from-goclaw-neon-purple/50 to-goclaw-neon-purple/20 border border-goclaw-neon-purple/50 rounded-xl transition-all group-hover:scale-105"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-goclaw-neon-purple/50 to-goclaw-neon-purple/20 border border-goclaw-neon-purple/50 rounded-xl transition-all group-hover:from-goclaw-neon-purple/60 group-hover:to-goclaw-neon-purple/30"></div>
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none z-0"></div>
           {#if loading}
             <Loader2 class="w-3.5 h-3.5 relative z-10 animate-spin text-white" />
           {:else}

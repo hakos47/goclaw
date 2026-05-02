@@ -399,6 +399,9 @@ func (s *Server) SetPairingService(ps store.PairingStore) { s.pairingService = p
 // SetAgentsHandler sets the agent CRUD handler.
 func (s *Server) SetAgentsHandler(h *httpapi.AgentsHandler) { s.handlers = append(s.handlers, h) }
 
+// SetAuthWebAuthnHandler sets the WebAuthn handler.
+func (s *Server) SetAuthWebAuthnHandler(h interface{ RegisterRoutes(*http.ServeMux) }) { s.handlers = append(s.handlers, h) }
+
 // SetSkillsHandler sets the skill management handler.
 func (s *Server) SetSkillsHandler(h *httpapi.SkillsHandler) { s.handlers = append(s.handlers, h) }
 

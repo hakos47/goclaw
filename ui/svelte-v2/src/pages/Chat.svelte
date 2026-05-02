@@ -44,15 +44,15 @@
   }
 </script>
 
-<div class="flex h-full w-full overflow-hidden bg-[#030014]/80 rounded-[2rem] border border-white/5 shadow-[0_0_50px_rgba(217,70,239,0.03)] backdrop-blur-3xl relative">
-    <!-- Grid Background -->
-    <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-30"></div>
+<div class="flex h-full w-full overflow-hidden relative isolate">
 
     <!-- Sidebar -->
-    <ChatSidebar activeKey={sessionKey} />
+    <div class="h-full {sessionKey && sessionKey !== 'chat' ? 'hidden md:block' : 'w-full md:w-auto'}">
+        <ChatSidebar activeKey={sessionKey} />
+    </div>
 
     <!-- Main Chat Area -->
-    <div class="flex-1 flex flex-col min-w-0 relative z-10">
+    <div class="flex-1 flex flex-col min-w-0 relative z-10 {(!sessionKey || sessionKey === 'chat') ? 'hidden md:flex' : 'flex'}">
         {#if sessionKey && sessionKey !== 'chat'}
             <ChatTopBar {agentId} />
             <ChatThread />
@@ -70,66 +70,62 @@
                 {/if}
             </div>
         {:else}
-            <div class="flex-1 flex items-center justify-center relative">
+            <div class="flex-1 flex items-center justify-center relative p-6 overflow-y-auto custom-scrollbar">
                 <!-- Glowing orb background for empty state -->
-                <div class="absolute w-96 h-96 bg-goclaw-neon-purple/10 blur-[100px] rounded-full pointer-events-none"></div>
-                <div class="absolute w-64 h-64 bg-goclaw-neon-cyan/5 blur-[80px] rounded-full pointer-events-none translate-x-20 translate-y-20"></div>
+                <div class="absolute w-[500px] h-[500px] bg-gradient-to-br from-goclaw-neon-purple/10 to-blue-500/5 blur-[100px] rounded-full pointer-events-none"></div>
+                <div class="absolute w-64 h-64 bg-goclaw-neon-cyan/5 blur-[80px] rounded-full pointer-events-none translate-x-32 translate-y-32"></div>
                 
-                <div class="text-center space-y-6 relative z-10 max-w-lg">
-                    <div class="h-24 w-24 bg-black/60 rounded-3xl flex items-center justify-center mx-auto border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)]">
-                        <img src="/goclaw-nix.png" alt="GoClaw" class="h-12 w-12 opacity-40 grayscale" />
+                <div class="text-center space-y-8 relative z-10 max-w-2xl w-full py-10">
+                    <div class="relative w-32 h-32 mx-auto mb-6">
+                        <div class="absolute inset-0 bg-goclaw-neon-purple/20 blur-[40px] rounded-full animate-pulse-slow"></div>
+                        <img src="/goclaw-nix.png" alt="GoClaw" class="relative w-32 h-32 opacity-90 drop-shadow-[0_0_20px_rgba(217,70,239,0.8)] mx-auto animate-float" />
                     </div>
                     <div>
-                        <h2 class="text-2xl font-bold tracking-widest uppercase text-white/80">Command Uplink</h2>
-                        <p class="text-xs font-mono text-white/40 uppercase tracking-[0.2em] mt-2">Select an operative from the sidebar to establish a secure session</p>
+                        <h2 class="text-3xl md:text-4xl font-black tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-[#d946ef] to-[#3b82f6] drop-shadow-[0_0_10px_rgba(217,70,239,0.3)]">Command Uplink</h2>
+                        <p class="text-xs font-mono text-white/40 uppercase tracking-[0.2em] mt-3">Select an operative from the sidebar to establish a secure session</p>
                     </div>
-                    <div class="pt-8 grid grid-cols-2 gap-3 z-20 relative">
+                    <div class="pt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 z-20 relative text-left">
                         {#if agentsState.agents.length === 0}
-                            <div class="col-span-2 text-center text-white/30 text-[10px] font-mono tracking-widest uppercase py-4">
+                            <div class="col-span-full text-center text-goclaw-neon-purple/50 text-[10px] font-mono tracking-widest uppercase py-8 border border-goclaw-neon-purple/20 rounded-2xl bg-goclaw-neon-purple/5 border-dashed">
                                 NO OPERATIVES DEPLOYED
                             </div>
                         {:else}
                             {#each agentsState.agents as agent}
                                 <button 
                                     onclick={() => launchAgent(agent.id || agent.agent_key)}
-                                    class="relative p-5 group/agent transition-all duration-700 hover:-translate-y-1 isolate overflow-hidden bg-[#030014]/60 backdrop-blur-2xl border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-2xl flex flex-col h-32 text-left"
+                                    class="relative p-5 group/agent transition-all duration-500 hover:-translate-y-1 isolate overflow-hidden bg-black/40 backdrop-blur-3xl border border-[#d946ef]/20 shadow-[0_0_30px_rgba(217,70,239,0.1),inset_0_1px_1px_rgba(255,255,255,0.05)] hover:shadow-[0_0_40px_rgba(217,70,239,0.3)] hover:border-[#d946ef]/50 rounded-3xl flex flex-col h-[140px]"
                                 >
-                                    <!-- Cybernetic Corner Accents -->
-                                    <div class="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-white/20 rounded-tl-xl opacity-50 group-hover/agent:border-goclaw-neon-purple group-hover/agent:opacity-100 transition-colors duration-500"></div>
-                                    <div class="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-white/20 rounded-tr-xl opacity-50 group-hover/agent:border-goclaw-neon-purple group-hover/agent:opacity-100 transition-colors duration-500"></div>
-                                    <div class="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-white/20 rounded-bl-xl opacity-50 group-hover/agent:border-goclaw-neon-purple group-hover/agent:opacity-100 transition-colors duration-500"></div>
-                                    <div class="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-white/20 rounded-br-xl opacity-50 group-hover/agent:border-goclaw-neon-purple group-hover/agent:opacity-100 transition-colors duration-500"></div>
-
-                                    <!-- Ambient Glow & Scanline Background -->
+                                    <!-- Ambient Glow -->
+                                    <div class="absolute inset-0 bg-gradient-to-br from-goclaw-neon-purple/0 to-goclaw-neon-cyan/0 group-hover/agent:from-goclaw-neon-purple/10 group-hover/agent:to-goclaw-neon-cyan/5 transition-all duration-500 pointer-events-none"></div>
+                                    
+                                    <!-- Scanline Background -->
                                     <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100%_4px] opacity-20 pointer-events-none"></div>
-                                    <div class="absolute -right-8 -top-8 w-24 h-24 bg-goclaw-neon-purple/20 rounded-full blur-[30px] group-hover/agent:bg-goclaw-neon-purple/40 group-hover/agent:scale-150 transition-all duration-1000 ease-out"></div>
-                                    <div class="absolute -left-8 -bottom-8 w-24 h-24 bg-goclaw-neon-cyan/10 rounded-full blur-[30px] group-hover/agent:bg-goclaw-neon-cyan/30 group-hover/agent:scale-150 transition-all duration-1000 ease-out"></div>
                                     
                                     <!-- Header (Avatar + Name) -->
-                                    <div class="flex items-start gap-3 relative z-10 flex-1 w-full">
-                                        <div class="h-10 w-10 shrink-0 rounded-xl bg-black/50 flex items-center justify-center border border-white/10 group-hover/agent:border-goclaw-neon-purple/50 group-hover/agent:text-goclaw-neon-purple group-hover/agent:shadow-[0_0_15px_rgba(217,70,239,0.3)] transition-all duration-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+                                    <div class="flex items-start gap-4 relative z-10 w-full">
+                                        <div class="h-12 w-12 shrink-0 rounded-xl bg-[#030014] flex items-center justify-center border border-white/10 group-hover/agent:border-goclaw-neon-purple/50 group-hover/agent:text-goclaw-neon-purple group-hover/agent:shadow-[0_0_20px_rgba(217,70,239,0.3)] transition-all duration-500 shadow-inner">
                                             {#if agent.emoji}
-                                                <span class="text-lg">{agent.emoji}</span>
+                                                <span class="text-xl drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{agent.emoji}</span>
                                             {:else}
-                                                <Bot class="h-5 w-5 text-white/70 group-hover/agent:text-goclaw-neon-purple transition-colors duration-500" />
+                                                <Bot class="h-6 w-6 text-white/50 group-hover/agent:text-goclaw-neon-purple transition-colors duration-500" />
                                             {/if}
                                         </div>
-                                        <div class="flex flex-col min-w-0 pt-0.5">
-                                            <span class="text-[8px] font-mono text-goclaw-neon-cyan/70 uppercase tracking-[0.3em] mb-0.5">Operative</span>
-                                            <p class="text-xs font-bold text-white/60 group-hover/agent:text-white uppercase tracking-wider truncate transition-colors duration-300">
+                                        <div class="flex flex-col min-w-0 pt-0.5 flex-1">
+                                            <span class="text-[9px] font-mono text-goclaw-neon-cyan uppercase tracking-[0.3em] mb-1">Operative</span>
+                                            <p class="text-xs font-bold text-white/80 group-hover/agent:text-white uppercase tracking-wider truncate transition-colors duration-300 drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
                                                 {agent.name || agent.display_name || agent.agent_key || agent.id}
                                             </p>
                                         </div>
                                     </div>
                                     
                                     <!-- Footer (Model) -->
-                                    <div class="relative z-10 w-full mt-auto pt-3 flex items-center gap-2">
-                                        <div class="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover/agent:via-goclaw-neon-purple/30 transition-colors duration-500"></div>
-                                        <p class="text-[9px] font-mono text-white/30 group-hover/agent:text-white/60 truncate uppercase tracking-widest flex items-center gap-1.5 shrink-0 transition-colors duration-500">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500/50 shadow-[0_0_8px_rgba(16,185,129,0.5)] group-hover/agent:animate-pulse"></span>
+                                    <div class="relative z-10 w-full mt-auto pt-4 flex items-center gap-2">
+                                        <div class="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover/agent:via-goclaw-neon-purple/40 transition-colors duration-500"></div>
+                                        <p class="text-[10px] font-mono text-white/40 group-hover/agent:text-goclaw-neon-cyan truncate uppercase tracking-widest flex items-center gap-1.5 shrink-0 transition-colors duration-500">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500/50 shadow-[0_0_8px_rgba(16,185,129,0.8)] group-hover/agent:animate-pulse"></span>
                                             {agent.model || 'Unknown Model'}
                                         </p>
-                                        <div class="h-px flex-1 bg-gradient-to-r from-white/10 via-transparent to-transparent group-hover/agent:from-goclaw-neon-purple/30 transition-colors duration-500"></div>
+                                        <div class="h-px flex-1 bg-gradient-to-r from-white/10 via-transparent to-transparent group-hover/agent:from-goclaw-neon-cyan/40 transition-colors duration-500"></div>
                                     </div>
                                 </button>
                             {/each}

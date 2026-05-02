@@ -125,8 +125,9 @@ func checkPgDump(ctx context.Context, serverMajor int) PreflightCheck {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	path, err := exec.LookPath("pg_dump")
-	if err != nil {
+	
+	ver, verErr := PgDumpVersion(ctx)
+	if verErr != nil {
 		hint := "Install a PostgreSQL client package whose major version matches your server, or add pg_dump to PATH. Filesystem-only backup still works with --exclude-db."
 		if serverMajor > 0 {
 			hint = fmt.Sprintf("Install postgresql%d-client to match your PostgreSQL %d server, or add pg_dump to PATH. Filesystem-only backup still works with --exclude-db.", serverMajor, serverMajor)
@@ -134,18 +135,16 @@ func checkPgDump(ctx context.Context, serverMajor int) PreflightCheck {
 		return PreflightCheck{
 			Name:   "pg_dump",
 			Status: "missing",
-			Detail: "pg_dump not found on PATH",
+			Detail: fmt.Sprintf("pg_dump not found: %v", verErr),
 			Hint:   hint,
 		}
 	}
-	ver, verErr := PgDumpVersion(ctx)
-	if verErr != nil {
-		return PreflightCheck{
-			Name:   "pg_dump",
-			Status: "warning",
-			Detail: fmt.Sprintf("found at %s but could not get version: %v", path, verErr),
-		}
+
+	path, err := exec.LookPath("pg_dump")
+	if err != nil {
+		path = "docker fallback"
 	}
+
 	return PreflightCheck{
 		Name:   "pg_dump",
 		Status: "ok",

@@ -55,6 +55,10 @@ func (p *OpenAIProvider) chatRequestFn(ctx context.Context, body map[string]any)
 			return nil, fmt.Errorf("%s: decode response: %w", p.name, err)
 		}
 
+		if oaiResp.BaseResp != nil && oaiResp.BaseResp.StatusCode != 0 && oaiResp.BaseResp.StatusCode != 10000 {
+			return nil, fmt.Errorf("%s: %s (code %d)", p.name, oaiResp.BaseResp.StatusMsg, oaiResp.BaseResp.StatusCode)
+		}
+
 		return p.parseResponse(&oaiResp), nil
 	}
 }

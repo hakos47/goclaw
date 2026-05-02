@@ -131,6 +131,7 @@ export class HttpClient {
     let res: Response;
     try {
       res = await fetch(url, {
+        credentials: "include",
         ...init,
         headers: { ...this.headers(), ...(init.headers as Record<string, string>) },
       });

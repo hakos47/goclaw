@@ -91,9 +91,9 @@ jobs:
       - name: Build web UI
         run: |
           corepack enable && corepack prepare pnpm@10.28.2 --activate
-          cd ui/web && pnpm install --frozen-lockfile && pnpm build && cd ../..
+          cd ui/svelte-v2 && pnpm install --frozen-lockfile && pnpm build && cd ../..
           mkdir -p internal/webui/dist
-          cp -r ui/web/dist/* internal/webui/dist/
+          cp -r ui/svelte-v2/dist/* internal/webui/dist/
 
       - name: Build binary
         env:
@@ -270,7 +270,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ui/web
+          context: ui/svelte-v2
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

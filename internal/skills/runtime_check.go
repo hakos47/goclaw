@@ -2,8 +2,10 @@ package skills
 
 import (
 	"context"
+	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -55,17 +57,37 @@ func CheckRuntimes() *RuntimeStatus {
 		status.Runtimes = append(status.Runtimes, info)
 	}
 
-	// Check pkg-helper socket availability (not a binary, but a Unix socket).
-	pkgInfo := RuntimeInfo{Name: "pkg-helper"}
+	// Check system package installer availability
+	pkgInfo := RuntimeInfo{Name: "system-installer"}
 	if fi, err := os.Stat(pkgHelperSocket); err == nil && fi.Mode().Type()&os.ModeSocket != 0 {
-		pkgInfo.Available = true
-		pkgInfo.Version = "socket"
+		if _, dialErr := net.Dial("unix", pkgHelperSocket); dialErr == nil {
+			pkgInfo.Available = true
+			pkgInfo.Version = "docker-apk-socket"
+		}
+	}
+	if !pkgInfo.Available {
+		if _, err := exec.LookPath("nix"); err == nil {
+			pkgInfo.Available = true
+			pkgInfo.Version = "nix-native"
+		} else if _, err := exec.LookPath("apt-get"); err == nil {
+			pkgInfo.Available = true
+			pkgInfo.Version = "apt-native"
+		} else if _, err := exec.LookPath("brew"); err == nil {
+			pkgInfo.Available = true
+			pkgInfo.Version = "brew-native"
+		}
 	}
 	status.Runtimes = append(status.Runtimes, pkgInfo)
 
 	// Check github-bin runtime directory (where GitHub-installed binaries live).
 	ghInfo := RuntimeInfo{Name: "github-bin"}
-	binDir := "/app/data/.runtime/bin"
+	var binDir string
+	if _, err := os.Stat("/app"); err == nil {
+		binDir = "/app/data/.runtime/bin"
+	} else {
+		home, _ := os.UserHomeDir()
+		binDir = filepath.Join(home, ".goclaw", "data", ".runtime", "bin")
+	}
 	if gh := DefaultGitHubInstaller(); gh != nil && gh.Config != nil && gh.Config.BinDir != "" {
 		binDir = gh.Config.BinDir
 	}

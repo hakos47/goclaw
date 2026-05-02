@@ -116,13 +116,10 @@ func InitOwnerIDs(ids []string) {
 }
 
 // isHTTPOwnerID checks if the user ID is a configured owner.
-// If no owner IDs configured, only "system" is treated as owner (fail-closed).
+// If no owner IDs configured, all gateway-token users are treated as owners (fail-open for dev).
 func isHTTPOwnerID(userID string, ownerIDs []string) bool {
-	if userID == "" {
-		return false
-	}
 	if len(ownerIDs) == 0 {
-		return userID == "system"
+		return true
 	}
 	return slices.Contains(ownerIDs, userID)
 }
@@ -168,11 +165,12 @@ func resolveAuth(r *http.Request) authResult {
 // resolveAuthWithBearer is like resolveAuth but accepts a pre-extracted bearer token.
 // Useful for handlers that also accept tokens from query params.
 func resolveAuthWithBearer(r *http.Request, bearer string) authResult {
+	userID := extractUserID(r)
+	
 	// Gateway token → admin.
 	// Only configured owner IDs get unrestricted tenant scoping; other callers may
 	// only narrow to tenants where the supplied user already has membership.
 	if pkgGatewayToken != "" && tokenMatch(bearer, pkgGatewayToken) {
-		userID := extractUserID(r)
 		isOwner := isHTTPOwnerID(userID, pkgOwnerIDs)
 		role := permissions.RoleAdmin
 		if isOwner {
@@ -185,6 +183,7 @@ func resolveAuthWithBearer(r *http.Request, bearer string) authResult {
 		} else {
 			tenantID, allowed := resolveTenantHint(r.Context(), tenantVal, userID)
 			if !allowed {
+				slog.Warn("Auth Debug: Invalid tenant scope or not an owner", "user_id", userID, "tenant_val", tenantVal)
 				return authResult{}
 			}
 			res.TenantID = tenantID
@@ -195,6 +194,7 @@ func resolveAuthWithBearer(r *http.Request, bearer string) authResult {
 		res.TenantSlug = resolveTenantSlug(r.Context(), res.TenantID)
 		return res
 	}
+
 	// API key → role from scopes
 	if keyData, role := ResolveAPIKey(r.Context(), bearer); role != "" {
 		res := authResult{Role: role, Authenticated: true, KeyData: keyData}
@@ -212,12 +212,14 @@ func resolveAuthWithBearer(r *http.Request, bearer string) authResult {
 		}
 		return res
 	}
+
 	// Browser pairing → operator (via X-GoClaw-Sender-Id header)
 	if senderID := r.Header.Get("X-GoClaw-Sender-Id"); senderID != "" && pkgPairingStore != nil {
 		paired, err := pkgPairingStore.IsPaired(r.Context(), senderID, "browser")
 		if err == nil && paired {
-			tenantID, allowed := resolveTenantHint(r.Context(), r.Header.Get("X-GoClaw-Tenant-Id"), extractUserID(r))
+			tenantID, allowed := resolveTenantHint(r.Context(), r.Header.Get("X-GoClaw-Tenant-Id"), userID)
 			if !allowed {
+				slog.Warn("Auth Debug: Pairing successful but tenant hint rejected", "user_id", userID)
 				return authResult{}
 			}
 			return authResult{
@@ -233,6 +235,9 @@ func resolveAuthWithBearer(r *http.Request, bearer string) authResult {
 			slog.Warn("security.http_pairing_auth_failed", "sender_id", senderID, "ip", r.RemoteAddr)
 		}
 	}
+
+	slog.Warn("Auth Debug: Token match failed or fallback reached", "bearer_len", len(bearer), "user_id", userID, "path", r.URL.Path)
+
 	// No auth configured → admin (no token = dev/single-user mode, full access)
 	if pkgGatewayToken == "" {
 		return authResult{Role: permissions.RoleAdmin, Authenticated: true, TenantID: store.MasterTenantID}

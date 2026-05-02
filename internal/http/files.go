@@ -55,42 +55,108 @@ func (h *FilesHandler) handleSign(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate path is within workspace or dataDir before signing.
-	// Defense-in-depth: prevents signing tokens for arbitrary system files.
 	absPath := filepath.Clean(body.Path)
 	if !filepath.IsAbs(absPath) {
-		// Windows drive letter path (e.g. "C:\...") — keep as-is, consistent with handleServe.
 		if len(absPath) >= 2 && absPath[1] == ':' {
-			// already absolute on Windows
 		} else {
 			absPath = filepath.Clean("/" + absPath)
 		}
 	}
+
 	sep := string(filepath.Separator)
-	if (h.workspace == "" || (!strings.HasPrefix(absPath, h.workspace+sep) && absPath != h.workspace)) &&
-		(h.dataDir == "" || (!strings.HasPrefix(absPath, h.dataDir+sep) && absPath != h.dataDir)) {
+	allowed := false
+
+	// Check main workspace
+	if h.workspace != "" && (strings.HasPrefix(absPath, h.workspace+sep) || absPath == h.workspace) {
+		allowed = true
+	}
+	// Check legacy .goclaw/workspace
+	if !allowed {
+		if home, _ := os.UserHomeDir(); home != "" {
+			legacyWs := filepath.Join(home, ".goclaw", "workspace")
+			if strings.HasPrefix(absPath, legacyWs+sep) || absPath == legacyWs {
+				allowed = true
+			}
+		}
+	}
+	// Check data dir
+	if !allowed && h.dataDir != "" && (strings.HasPrefix(absPath, h.dataDir+sep) || absPath == h.dataDir) {
+		allowed = true
+	}
+
+	if !allowed {
 		slog.Warn("security.files_sign_path_denied", "path", absPath, "workspace", h.workspace, "data_dir", h.dataDir)
 		http.Error(w, `{"error":"path outside allowed directories"}`, http.StatusForbidden)
 		return
 	}
-
 	// Multi-tenant (RBAC): additionally restrict to the requesting tenant's dirs.
-	// Prevents tenant A from signing a URL for tenant B's files.
 	if edition.Current().RBACEnabled {
-		tenantData := config.TenantDataDir(h.dataDir, store.TenantIDFromContext(authedReq.Context()), store.TenantSlugFromContext(authedReq.Context()))
-		tenantWs := config.TenantWorkspace(h.workspace, store.TenantIDFromContext(authedReq.Context()), store.TenantSlugFromContext(authedReq.Context()))
-		if (!strings.HasPrefix(absPath, tenantData+sep) && absPath != tenantData) &&
-			(!strings.HasPrefix(absPath, tenantWs+sep) && absPath != tenantWs) {
+		tid := store.TenantIDFromContext(authedReq.Context())
+		slug := store.TenantSlugFromContext(authedReq.Context())
+		tenantData := config.TenantDataDir(h.dataDir, tid, slug)
+		tenantWs := config.TenantWorkspace(h.workspace, tid, slug)
+
+		tenantAllowed := false
+		if strings.HasPrefix(absPath, tenantData+sep) || absPath == tenantData {
+			tenantAllowed = true
+		}
+		if !tenantAllowed && (strings.HasPrefix(absPath, tenantWs+sep) || absPath == tenantWs) {
+			tenantAllowed = true
+		}
+		// Legacy check for tenant ws
+		if !tenantAllowed {
+			if home, _ := os.UserHomeDir(); home != "" {
+				legacyBase := filepath.Join(home, ".goclaw", "workspace")
+				legacyTenantWs := config.TenantWorkspace(legacyBase, tid, slug)
+				if strings.HasPrefix(absPath, legacyTenantWs+sep) || absPath == legacyTenantWs {
+					tenantAllowed = true
+				}
+			}
+		}
+
+		if !tenantAllowed {
 			slog.Warn("security.files_sign_tenant_denied", "path", absPath, "tenant_data", tenantData, "tenant_ws", tenantWs)
 			http.Error(w, `{"error":"path outside allowed directories"}`, http.StatusForbidden)
 			return
 		}
 	}
-
-	urlPath := "/v1/files/" + strings.TrimPrefix(filepath.Clean(body.Path), "/")
+	urlPath := h.virtualizePath(absPath)
+	urlPath = "/v1/files/" + strings.TrimPrefix(urlPath, "/")
 	ft := SignFileToken(urlPath, FileSigningKey(), FileTokenTTL)
 	writeJSON(w, http.StatusOK, map[string]string{
 		"url": urlPath + "?ft=" + ft,
 	})
+}
+
+// virtualizePath replaces absolute system prefixes with virtual ones ('ws/', 'data/').
+func (h *FilesHandler) virtualizePath(absPath string) string {
+	sep := string(filepath.Separator)
+	// Priority: workspace > dataDir
+	if h.workspace != "" && (strings.HasPrefix(absPath, h.workspace+sep) || absPath == h.workspace) {
+		return "ws" + absPath[len(h.workspace):]
+	}
+	// Fallback: check legacy .goclaw/workspace if home-relative
+	if home, _ := os.UserHomeDir(); home != "" {
+		legacyWs := filepath.Join(home, ".goclaw", "workspace")
+		if strings.HasPrefix(absPath, legacyWs+sep) || absPath == legacyWs {
+			return "ws" + absPath[len(legacyWs):]
+		}
+	}
+	if h.dataDir != "" && (strings.HasPrefix(absPath, h.dataDir+sep) || absPath == h.dataDir) {
+		return "data" + absPath[len(h.dataDir):]
+	}
+	return absPath
+}
+
+// devirtualizePath restores a virtual path ('ws/...') to an absolute system path.
+func (h *FilesHandler) devirtualizePath(virtPath string) string {
+	if strings.HasPrefix(virtPath, "ws/") || virtPath == "ws" {
+		return filepath.Join(h.workspace, strings.TrimPrefix(virtPath, "ws"))
+	}
+	if strings.HasPrefix(virtPath, "data/") || virtPath == "data" {
+		return filepath.Join(h.dataDir, strings.TrimPrefix(virtPath, "data"))
+	}
+	return virtPath
 }
 
 func (h *FilesHandler) auth(next http.HandlerFunc) http.HandlerFunc {
@@ -132,20 +198,20 @@ func (h *FilesHandler) handleServe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Prevent path traversal
-	if strings.Contains(urlPath, "..") {
-		slog.Warn("security.files_traversal", "path", urlPath)
-		http.Error(w, i18n.T(locale, i18n.MsgInvalidPath), http.StatusBadRequest)
-		return
-	}
-
-	// URL path is the absolute path with leading "/" stripped (e.g. "app/.goclaw/workspace/file.png")
-	// Windows drive letter: "C:/Users/..." → use directly without prepending "/"
+	// Support both virtualized and absolute paths for serving.
+	// Virtual paths are clean: "ws/file.png" or "data/config.json".
+	// Legacy absolute paths are also supported for internal use.
 	var absPath string
-	if len(urlPath) >= 2 && urlPath[1] == ':' {
-		absPath = filepath.Clean(urlPath)
+	if strings.HasPrefix(urlPath, "ws/") || strings.HasPrefix(urlPath, "data/") || urlPath == "ws" || urlPath == "data" {
+		absPath = h.devirtualizePath(urlPath)
 	} else {
-		absPath = filepath.Clean("/" + urlPath)
+		// Absolute path with leading "/" stripped (e.g. "app/.goclaw/workspace/file.png")
+		// Windows drive letter: "C:/Users/..." → use directly without prepending "/"
+		if len(urlPath) >= 2 && urlPath[1] == ':' {
+			absPath = filepath.Clean(urlPath)
+		} else {
+			absPath = filepath.Clean("/" + urlPath)
+		}
 	}
 
 	// Block access to sensitive system directories
@@ -158,13 +224,21 @@ func (h *FilesHandler) handleServe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Defense-in-depth: validate workspace/dataDir boundary even for signed file tokens.
-	// The token cryptographically binds the URL path, but we also verify the resolved
-	// absolute path stays within allowed directories to limit blast radius of any
-	// bug in the signing flow.
 	if r.URL.Query().Get("ft") != "" {
 		sep := string(filepath.Separator)
 		inWorkspace := h.workspace != "" && (strings.HasPrefix(absPath, h.workspace+sep) || absPath == h.workspace)
 		inDataDir := h.dataDir != "" && (strings.HasPrefix(absPath, h.dataDir+sep) || absPath == h.dataDir)
+
+		// Legacy/Fallback check: also allow files in ~/.goclaw/workspace
+		if !inWorkspace {
+			if home, _ := os.UserHomeDir(); home != "" {
+				legacyWs := filepath.Join(home, ".goclaw", "workspace")
+				if strings.HasPrefix(absPath, legacyWs+sep) || absPath == legacyWs {
+					inWorkspace = true
+				}
+			}
+		}
+
 		if !inWorkspace && !inDataDir {
 			slog.Warn("security.files_ft_path_denied", "path", absPath, "workspace", h.workspace, "data_dir", h.dataDir)
 			http.NotFound(w, r)
@@ -172,15 +246,22 @@ func (h *FilesHandler) handleServe(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Path isolation: validate file path is within allowed directories.
+	// Path isolation: validate file path is within allowed directories for unsigned requests.
 	if r.URL.Query().Get("ft") == "" {
 		allowed := false
-
-		// Always allow files within workspace root and data dir root.
-		// These are the two top-level directories that contain all user files.
 		sep := string(filepath.Separator)
+
 		if h.workspace != "" && (strings.HasPrefix(absPath, h.workspace+sep) || absPath == h.workspace) {
 			allowed = true
+		}
+		if !allowed {
+			// Check legacy .goclaw/workspace
+			if home, _ := os.UserHomeDir(); home != "" {
+				legacyWs := filepath.Join(home, ".goclaw", "workspace")
+				if strings.HasPrefix(absPath, legacyWs+sep) || absPath == legacyWs {
+					allowed = true
+				}
+			}
 		}
 		if !allowed && h.dataDir != "" && (strings.HasPrefix(absPath, h.dataDir+sep) || absPath == h.dataDir) {
 			allowed = true

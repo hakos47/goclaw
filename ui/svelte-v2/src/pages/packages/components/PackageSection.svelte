@@ -2,6 +2,7 @@
   import { Download, Loader2, Trash2, Package as PkgIcon } from "lucide-svelte";
   import type { PackageInfo } from "$lib/state/packages.svelte";
   import { fade } from "svelte/transition";
+  import { _ } from "svelte-i18n";
 
   type Props = {
     title: string;
@@ -92,7 +93,7 @@
       {:else}
         <Download class="h-4 w-4" />
       {/if}
-      Install
+      {$_("packages.actions.install")}
     </button>
   </div>
 
@@ -104,7 +105,7 @@
       </div>
     {:else if !packages?.length}
       <div class="text-center p-8 border border-white/5 border-dashed rounded-xl text-[10px] font-mono text-white/30 uppercase">
-        No packages installed in this ecosystem.
+        {$_("packages.table.empty")}
       </div>
     {:else}
       <div class="flex flex-wrap gap-2">
@@ -120,7 +121,7 @@
               onclick={() => handleUninstall(pkg.name)}
               disabled={status === "loading"}
               class={`p-1.5 rounded-md transition-all ${status === 'error' ? 'text-red-500' : 'text-white/20 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100'}`}
-              title="Uninstall Package"
+              title={$_("packages.actions.uninstall")}
             >
               {#if status === "loading"}
                 <Loader2 class="h-3.5 w-3.5 animate-spin text-red-400" />

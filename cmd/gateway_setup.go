@@ -99,6 +99,15 @@ func setupToolRegistry(
 			slog.Info("browser tool enabled", "remote", cfg.Tools.Browser.RemoteURL)
 		} else {
 			opts = append(opts, browser.WithHeadless(cfg.Tools.Browser.Headless))
+
+			// Support environment overrides for containerized environments
+			if bin := os.Getenv("ROD_BIN"); bin != "" {
+				opts = append(opts, browser.WithBinPath(bin))
+			}
+			if leakless := os.Getenv("ROD_LEAKLESS"); leakless != "" {
+				opts = append(opts, browser.WithLeakless(leakless == "true"))
+			}
+
 			slog.Info("browser tool enabled", "headless", cfg.Tools.Browser.Headless)
 		}
 		if cfg.Tools.Browser.ActionTimeoutMs > 0 {

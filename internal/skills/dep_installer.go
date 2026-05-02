@@ -89,9 +89,8 @@ func InstallSingleDep(ctx context.Context, dep string) (bool, string) {
 			return false, msg
 		}
 	default:
-		// System package via pkg-helper (root-privileged Unix socket).
-		// pkg-helper handles persist to apk-packages file.
-		ok, errMsg := apkViaHelper(ctx, "install", dep)
+		// System package via pkg-helper or native package manager.
+		ok, errMsg := osAgnosticSystemAction(ctx, "install", dep)
 		if !ok {
 			return false, errMsg
 		}
@@ -127,7 +126,7 @@ func InstallDeps(ctx context.Context, manifest *SkillManifest, missing []string)
 		slog.Info("skills: installing system packages", "pkgs", sysPkgs)
 		var successful []string
 		for _, pkg := range sysPkgs {
-			ok, errMsg := apkViaHelper(ctx, "install", pkg)
+			ok, errMsg := osAgnosticSystemAction(ctx, "install", pkg)
 			if !ok {
 				result.Errors = append(result.Errors, fmt.Sprintf("apk %s: %s", pkg, errMsg))
 			} else {
@@ -236,8 +235,8 @@ func UninstallPackage(ctx context.Context, dep string) (bool, string) {
 			return false, msg
 		}
 	default:
-		// System package via pkg-helper. Helper handles persist file removal.
-		ok, errMsg := apkViaHelper(ctx, "uninstall", dep)
+		// System package via pkg-helper or native package manager.
+		ok, errMsg := osAgnosticSystemAction(ctx, "uninstall", dep)
 		if !ok {
 			return false, errMsg
 		}

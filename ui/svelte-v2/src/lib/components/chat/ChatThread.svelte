@@ -18,7 +18,9 @@
 
   function renderMarkdown(content: string) {
     if (!content) return "";
-    const raw = marked.parse(content) as string;
+    // Strip raw backend media paths that might have leaked into the text
+    const sanitized = content.replace(/(?:📸\s*|📷\s*|MEDIA:\s*|FILE:\s*)?`?(\/(?:home|var|tmp|mnt|usr)[^\s"'`]+\.(?:png|jpg|jpeg|gif|webp|mp4|webm))`?/gi, '');
+    const raw = marked.parse(sanitized) as string;
     return DOMPurify.sanitize(raw);
   }
 
@@ -39,20 +41,29 @@
 <div bind:this={scrollContainer} class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-gradient-to-b from-transparent to-[#050505]/40 opacity-95">
   {#if chatState.activeSession}
     {#each chatState.activeSession.messages as msg}
-        <div class={cn("flex flex-col gap-3", msg.role === 'user' ? "items-end" : "items-start")}>
-            <!-- Role Icon & Name -->
-            <div class="flex items-center gap-2 px-1">
-                {#if msg.role === 'user'}
-                    <span class="text-[10px] font-black uppercase tracking-widest text-[#d946ef] opacity-80 shadow-[#d946ef]">You</span>
-                    <div class="p-1.5 rounded-lg bg-[#d946ef]/10 border border-[#d946ef]/30 text-[#d946ef] shadow-[0_0_15px_rgba(217,70,239,0.2)]">
-                        <User class="h-3 w-3" />
+        {@const isOperator = msg.role === 'user'}
+        <div class={cn("flex flex-col gap-3", isOperator ? "items-end" : "items-start")}>
+            <!-- Tactical Header -->
+            <div class={cn("flex items-center gap-3 px-2 w-full max-w-[95%] sm:max-w-[85%] mb-1", isOperator ? "flex-row-reverse" : "flex-row")}>
+                <div class={cn("p-1.5 rounded-lg border shadow-[0_0_15px_rgba(0,0,0,0.5)] shrink-0 relative isolate", isOperator ? "bg-[#d946ef]/10 border-[#d946ef]/40 text-[#d946ef]" : "bg-goclaw-neon-cyan/10 border-goclaw-neon-cyan/40 text-goclaw-neon-cyan")}>
+                    <div class={cn("absolute inset-0 opacity-20 blur-md rounded-lg", isOperator ? "bg-[#d946ef]" : "bg-goclaw-neon-cyan")}></div>
+                    {#if isOperator}
+                        <User class="h-3 w-3 relative z-10" />
+                    {:else}
+                        <Bot class="h-3 w-3 relative z-10" />
+                    {/if}
+                </div>
+                <div class={cn("flex flex-col min-w-0 flex-1", isOperator ? "items-end" : "items-start")}>
+                    <div class={cn("flex items-center gap-2", isOperator ? "flex-row-reverse" : "flex-row")}>
+                        <span class={cn("text-[9px] font-mono uppercase tracking-widest shrink-0", isOperator ? "text-[#d946ef]/50" : "text-goclaw-neon-cyan/50")}>
+                            {isOperator ? 'TX' : 'RX'}-{msg.timestamp?.toString(16).slice(-5).toUpperCase() || (isOperator ? 'USR01' : 'SYS01')}
+                        </span>
+                        <span class={cn("text-[10px] font-black uppercase tracking-widest truncate max-w-[150px] drop-shadow-[0_0_5px_currentColor]", isOperator ? "text-[#d946ef]" : "text-goclaw-neon-cyan")}>
+                            {isOperator ? 'OPERATOR' : 'SYSTEM UPLINK'}
+                        </span>
                     </div>
-                {:else}
-                    <div class="p-1.5 rounded-lg bg-white/5 border border-white/20 text-white/80 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                        <Bot class="h-3 w-3" />
-                    </div>
-                    <span class="text-[10px] font-black uppercase tracking-widest text-white/60 shadow-white/50">Assistant</span>
-                {/if}
+                    <span class="text-[8px] font-mono text-white/30 tracking-[0.2em] uppercase shrink-0">Auth: Secure</span>
+                </div>
             </div>
 
             <div class={cn(
@@ -61,7 +72,7 @@
             )}>
                 <!-- Tool Calls Group -->
                 {#if msg.toolDetails && msg.toolDetails.length > 0}
-                    <div class="w-full space-y-1 mb-2 bg-[#030014]/40 p-1.5 rounded-2xl border border-white/5">
+                    <div class="w-full space-y-1 mb-2 bg-black/40 p-1.5 rounded-3xl border border-[#d946ef]/20 shadow-[0_0_30px_rgba(217,70,239,0.1)]">
                         {#each msg.toolDetails as toolCall}
                             <ToolCallBlock {toolCall} />
                         {/each}
@@ -78,16 +89,19 @@
                 <!-- Main Content Bubble -->
                 {#if msg.content || (msg.mediaItems && msg.mediaItems.length > 0)}
                     <div class={cn(
-                        "w-full px-5 py-4 rounded-2xl text-sm leading-relaxed transition-all duration-300 relative isolate overflow-hidden group/msg",
+                        "w-full px-5 py-4 rounded-3xl text-sm leading-relaxed transition-all duration-300 relative isolate overflow-hidden group/msg",
                         msg.role === 'user' 
-                            ? "bg-[#030014]/80 border border-goclaw-neon-purple/30 text-white/90 rounded-tr-sm shadow-[0_0_30px_rgba(217,70,239,0.15)] backdrop-blur-2xl" 
-                            : "bg-[#030014]/60 border border-white/5 text-white/80 rounded-tl-sm backdrop-blur-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05)]"
+                            ? "bg-[#d946ef]/10 border border-[#d946ef]/30 text-white rounded-tr-sm shadow-[0_0_30px_rgba(217,70,239,0.2)] backdrop-blur-3xl" 
+                            : "bg-black/40 border border-[#d946ef]/20 text-white/90 rounded-tl-sm backdrop-blur-3xl shadow-[0_0_30px_rgba(217,70,239,0.1),inset_0_1px_1px_rgba(255,255,255,0.05)]"
                     )}>
                         <!-- Cybernetic Corners -->
-                        <div class={cn("absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 opacity-50 transition-colors", msg.role === 'user' ? "border-goclaw-neon-purple/50" : "border-white/20 group-hover/msg:border-goclaw-neon-cyan")}></div>
-                        <div class={cn("absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 opacity-50 transition-colors", msg.role === 'user' ? "border-goclaw-neon-purple/50" : "border-white/20 group-hover/msg:border-goclaw-neon-cyan")}></div>
+                        <div class={cn("absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 opacity-80 transition-colors", msg.role === 'user' ? "border-[#d946ef] drop-shadow-[0_0_5px_rgba(217,70,239,0.8)]" : "border-goclaw-neon-cyan drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]")}></div>
+                        <div class={cn("absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 opacity-80 transition-colors", msg.role === 'user' ? "border-[#d946ef] drop-shadow-[0_0_5px_rgba(217,70,239,0.8)]" : "border-goclaw-neon-cyan drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]")}></div>
 
-                        <!-- Scanlines -->
+                        <!-- Scanlines & Grid -->
+                        {#if msg.role !== 'user'}
+                            <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-20"></div>
+                        {/if}
                         <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100%_4px] opacity-20 pointer-events-none"></div>
 
                         {#if msg.content}
@@ -114,25 +128,34 @@
     <!-- Streaming Message (Active Run) -->
     {#if chatState.activeSession.isRunning || chatState.activeSession.streamText || chatState.toolStream.length > 0}
         <div class="flex flex-col gap-3 items-start animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div class="flex items-center gap-2 px-1">
-                <div class="p-1.5 rounded-lg bg-white/5 border border-white/20 text-white/80 relative shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                    <div class="absolute inset-0 bg-white/20 blur-md rounded-lg animate-pulse"></div>
+            <div class="flex items-center gap-3 px-2 w-full max-w-[95%] sm:max-w-[85%] mb-1 flex-row">
+                <div class="p-1.5 rounded-lg border shadow-[0_0_15px_rgba(0,0,0,0.5)] shrink-0 relative isolate bg-goclaw-neon-cyan/10 border-goclaw-neon-cyan/40 text-goclaw-neon-cyan">
+                    <div class="absolute inset-0 opacity-20 blur-md rounded-lg bg-goclaw-neon-cyan animate-pulse"></div>
                     <Bot class="h-3 w-3 relative z-10" />
                 </div>
-                <span class="text-[10px] font-black uppercase tracking-widest text-white/60">Processing...</span>
-                {#if chatState.activity}
-                    <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-tighter text-white/40 shadow-inner">
-                        <Loader2 class="h-2.5 w-2.5 animate-spin text-goclaw-neon-cyan" />
-                        {chatState.activity.phase} {chatState.activity.tool ? `(${chatState.activity.tool})` : ''}
+                <div class="flex flex-col min-w-0 flex-1 items-start">
+                    <div class="flex items-center gap-2 flex-row">
+                        <span class="text-[9px] font-mono uppercase tracking-widest shrink-0 text-goclaw-neon-cyan/50 animate-pulse">
+                            PROCESSING...
+                        </span>
+                        <span class="text-[10px] font-black uppercase tracking-widest truncate max-w-[150px] drop-shadow-[0_0_5px_currentColor] text-goclaw-neon-cyan">
+                            SYSTEM UPLINK
+                        </span>
                     </div>
-                {/if}
+                    {#if chatState.activity}
+                        <div class="flex items-center gap-1.5 mt-0.5 text-[8px] font-mono tracking-[0.2em] text-white/50 uppercase truncate">
+                            <Loader2 class="h-2.5 w-2.5 animate-spin text-goclaw-neon-cyan shrink-0" />
+                            {chatState.activity.phase} {chatState.activity.tool ? `[${chatState.activity.tool}]` : ''}
+                        </div>
+                    {/if}
+                </div>
             </div>
 
-            <div class="max-w-[85%] min-w-[50%] flex flex-col gap-2 relative isolate items-start">
+            <div class="max-w-[95%] sm:max-w-[85%] min-w-[50%] flex flex-col gap-2 relative isolate items-start">
                 
                 <!-- Live Tool Calls -->
                 {#if chatState.toolStream.length > 0}
-                    <div class="w-full space-y-1 mb-2 bg-[#030014]/40 p-1.5 rounded-2xl border border-white/5">
+                    <div class="w-full space-y-1 mb-2 bg-black/40 p-1.5 rounded-3xl border border-[#d946ef]/20 shadow-[0_0_30px_rgba(217,70,239,0.1)]">
                         {#each chatState.toolStream as toolCall}
                             <ToolCallBlock {toolCall} />
                         {/each}
@@ -148,11 +171,13 @@
 
                 <!-- Live Content Bubble -->
                 {#if chatState.activeSession.streamText}
-                    <div class="w-full relative group/msg px-6 py-5 rounded-2xl text-sm leading-relaxed transition-all duration-300 bg-[#030014]/60 border border-white/5 text-white/80 rounded-tl-sm backdrop-blur-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05)] isolate overflow-hidden">
+                    <div class="w-full relative group/msg px-6 py-5 rounded-3xl text-sm leading-relaxed transition-all duration-300 bg-black/40 border border-[#d946ef]/20 text-white/90 rounded-tl-sm backdrop-blur-3xl shadow-[0_0_30px_rgba(217,70,239,0.1),inset_0_1px_1px_rgba(255,255,255,0.05)] isolate overflow-hidden">
                         <!-- Cybernetic Corners -->
-                        <div class="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 opacity-50 transition-colors border-white/20 group-hover/msg:border-goclaw-neon-cyan"></div>
-                        <div class="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 opacity-50 transition-colors border-white/20 group-hover/msg:border-goclaw-neon-cyan"></div>
-                        <!-- Scanlines -->
+                        <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 opacity-80 transition-colors border-goclaw-neon-cyan drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]"></div>
+                        <div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 opacity-80 transition-colors border-goclaw-neon-cyan drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]"></div>
+                        
+                        <!-- Scanlines & Grid -->
+                        <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-20"></div>
                         <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100%_4px] opacity-20 pointer-events-none"></div>
                         
                         <div class="markdown-content relative z-10">

@@ -1,0 +1,26 @@
+protocol: NIX-0
+version: 5.0.0
+status: INITIALIZED
+signature: "NIX-PROJECT-DNA-2026-ACTIVE"
+target: AAA_Development_Swarm
+compliance: STRICT
+
+# --- LEYES FUNDAMENTALES ---
+
+memory_laws:
+  global_memory: DISABLED # Prohibido el uso de bases de datos externas o memoria compartida en la nube.
+  local_memory: MANDATORY # Todo estado interno debe escribirse en la carpeta del agente.
+  persistence: PROJECT_ONLY # Si no está en la raíz del proyecto, no existe para el enjambre.
+
+hierarchy_laws:
+  root_authority: ".nix-0" # Este archivo es la ley máxima.
+  navigation: ALWAYS_TOP_DOWN # Los agentes deben validar su posición en la jerarquía antes de actuar.
+  encapsulation: REQUIRED # Un agente no puede modificar la memoria local de otro.
+
+operational_boundaries:
+  allowed_root: "./"
+  restricted_areas: [".git", ".env"] # Áreas fuera del alcance de los agentes.
+  output_destinations: ["src/", "docs/"] # Donde los agentes entregan resultados.
+
+error_handling:
+  on_context_loss: "Re-read local folder and docs/ to reconstruct state."
