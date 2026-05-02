@@ -28,8 +28,13 @@
     }
 
     try {
-      const urlPath = getMediaPath(item.path);
-      const blob = await api.fetchBlob(urlPath);
+      // First, get a fresh signed URL from the server.
+      // This is necessary because tokens in the history expire after 5 minutes.
+      const signRes = await api.post<{url: string}>('/v1/files/sign', { path: item.path });
+      if (!signRes?.url) throw new Error("No signed URL returned");
+
+      // The returned URL is a virtualized path with a fresh ?ft= token.
+      const blob = await api.fetchBlob(signRes.url);
       blobUrl = URL.createObjectURL(blob);
     } catch (e) {
       console.error("Failed to load media:", e);

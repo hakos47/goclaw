@@ -87,23 +87,25 @@ export async function loadChatHistory(sessionKey: string, agentId: string) {
                     };
                 });
             }
-            if (m.media && m.media.length > 0) {
-                chatMsg.mediaItems = m.media.map((med: any) => ({
+            const media = m.media_refs || m.media;
+            if (media && media.length > 0) {
+                chatMsg.mediaItems = media.map((med: any) => ({
                     path: med.path || med.url,
-                    mimeType: med.content_type || 'application/octet-stream'
+                    mimeType: med.content_type || med.mime_type || 'application/octet-stream'
                 }));
             }
             
             // Extract raw paths from content that the backend might have leaked
             if (chatMsg.content) {
-                const pathRegex = /(?:📸\s*|📷\s*|MEDIA:\s*|FILE:\s*)?`?(\/(?:home|var|tmp|mnt|usr)[^\s"'`]+\.(?:png|jpg|jpeg|gif|webp|mp4|webm))`?/gi;
+                const pathRegex = /(?:📸\s*|📷\s*|MEDIA:\s*|FILE:\s*)?`?(\/(?:app|home|var|tmp|mnt|usr)[^\s"'`]+\.(?:png|jpg|jpeg|gif|webp|mp4|webm))`?/gi;
                 let match;
                 const leakedPaths = [];
                 let newContent = chatMsg.content;
                 
+                // Reset regex state
+                pathRegex.lastIndex = 0;
                 while ((match = pathRegex.exec(chatMsg.content)) !== null) {
                     leakedPaths.push(match[1]);
-                    // Replace the matched text with empty string to completely hide it
                     newContent = newContent.replace(match[0], '');
                 }
                 
@@ -262,8 +264,9 @@ export function handleAgentEvent(event: AgentEventPayload) {
                 let finalMedia: any[] = [];
                 
                 // Extract leaked paths from the streaming content
-                const pathRegex = /(?:📸\s*|📷\s*|MEDIA:\s*|FILE:\s*)?`?(\/(?:home|var|tmp|mnt|usr)[^\s"'`]+\.(?:png|jpg|jpeg|gif|webp|mp4|webm))`?/gi;
+                const pathRegex = /(?:📸\s*|📷\s*|MEDIA:\s*|FILE:\s*)?`?(\/(?:app|home|var|tmp|mnt|usr)[^\s"'`]+\.(?:png|jpg|jpeg|gif|webp|mp4|webm))`?/gi;
                 let match;
+                pathRegex.lastIndex = 0;
                 while ((match = pathRegex.exec(streamRef)) !== null) {
                     finalMedia.push({
                         path: match[1],
@@ -279,7 +282,7 @@ export function handleAgentEvent(event: AgentEventPayload) {
                         if (!finalMedia.find(m => m.path && m.path.endsWith(filename))) {
                             finalMedia.push({
                                 path: p,
-                                mimeType: med.content_type || 'application/octet-stream'
+                                mimeType: med.content_type || med.mime_type || 'application/octet-stream'
                             });
                         }
                     });

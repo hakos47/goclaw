@@ -18,10 +18,26 @@
 
   function renderMarkdown(content: string) {
     if (!content) return "";
-    // Strip raw backend media paths that might have leaked into the text
-    const sanitized = content.replace(/(?:📸\s*|📷\s*|MEDIA:\s*|FILE:\s*)?`?(\/(?:home|var|tmp|mnt|usr)[^\s"'`]+\.(?:png|jpg|jpeg|gif|webp|mp4|webm))`?/gi, '');
-    const raw = marked.parse(sanitized) as string;
-    return DOMPurify.sanitize(raw);
+    
+    // Parse markdown first
+    const rawHtml = marked.parse(content) as string;
+    const doc = new DOMParser().parseFromString(rawHtml, 'text/html');
+    
+    // Remove all <img> tags that point to system paths (they'll be handled by MediaBlock)
+    const images = doc.querySelectorAll('img');
+    images.forEach(img => {
+        const src = img.getAttribute('src') || '';
+        if (src.startsWith('/app/') || src.startsWith('/home/') || src.includes('/ws/') || src.includes('?ft=')) {
+            img.remove();
+        }
+    });
+
+    // Remove raw text paths that might have been left as plain text
+    let processedHtml = doc.body.innerHTML;
+    const pathRegex = /(?:📸\s*|📷\s*|MEDIA:\s*|FILE:\s*)?`?(\/(?:app|home|var|tmp|mnt|usr)[^\s"'`]+\.(?:png|jpg|jpeg|gif|webp|mp4|webm))`?/gi;
+    processedHtml = processedHtml.replace(pathRegex, '');
+
+    return DOMPurify.sanitize(processedHtml);
   }
 
   // Auto-scroll logic
