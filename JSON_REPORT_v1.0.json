@@ -1,21 +1,26 @@
 {
-  "ticket": "MIG-003_sessions_view",
-  "status": "DONE",
-  "checkpoints": {
-    "CP-1": "Endpoints & WebSocket state configured natively using useWsCall('sessions.list')",
-    "CP-2": "ContextUsageBar migrated with Dark Industrial Glass gradients and responsive constraints",
-    "CP-3": "Table structure converted to liquid widths, avoiding max-w-7xl on route '/sessions'",
-    "CP-4": "Svelte 5 UI compiled without TS errors. Reused global search & shared badges."
+  "task_id": "225abb48-0e91-44e1-a14d-8e9f533bf425",
+  "auditor": "SUPREME JUDGE - AUDITOR (NIX-0 GUARDIAN)",
+  "timestamp": "2026-05-02T12:00:00Z",
+  "verdict": "ACTION_REQUIRED",
+  "findings": {
+    "hooks_pipeline": {
+      "issue": "Latencia en pre_tool_use y post_tool_use",
+      "details": "pre_tool_use es totalmente síncrono (bloquea la ejecución de la herramienta). Cualquier I/O (DB, red) incrementa O(N) la latencia por turno del agente. post_tool_use se lanza con goroutines asíncronas desvinculadas, corriendo riesgo de leaks si no se controlan."
+    },
+    "rbac_overhead": {
+      "issue": "Contención de Locks en Dynamic Capabilities",
+      "details": "internal/tools/policy.go usa un RLock en la iteración de filterByCapability durante cada turno del agente (buildFilteredTools) para comprobar la denegación de capacidades por metadatos. Con múltiples agentes y subagentes corriendo en paralelo, esto crea un embudo crítico de contención."
+    },
+    "message_bus": {
+      "issue": "Inanición de Workers por Retries Síncronos",
+      "details": "internal/eventbus/bus_impl.go emplea un callWithRetry que ejecuta time.Sleep de manera bloqueante en la goroutine del worker en caso de fallos. Con un WorkerCount por defecto de 2, sólo 2 eventos fallidos paralizarán todo el EventBus para el clúster."
+    }
   },
-  "files_modified": [
-    "ui/svelte-v2/src/App.svelte",
-    "ui/svelte-v2/src/pages/Sessions.svelte",
-    "ui/svelte-v2/src/pages/sessions/components/ContextUsageBar.svelte",
-    "ui/svelte-v2/src/pages/sessions/components/SessionRow.svelte",
-    "ui/svelte-v2/src/lib/components/shared/SearchInput.svelte",
-    "ui/svelte-v2/src/lib/components/shared/EmptyState.svelte",
-    "ui/svelte-v2/src/lib/components/shared/TableSkeleton.svelte",
-    "ui/svelte-v2/src/lib/components/shared/Pagination.svelte"
-  ],
-  "build_status": "SUCCESS"
+  "proposals": [
+    "1. Hook Timeout: Reforzar un SLA estricto para hooks pre_tool_use, o evaluarlos en paralelo.",
+    "2. Caché de Políticas: Precalcular en PolicyEngine la intersección de herramientas permitidas por rol para evitar lock RLock O(N) en turnos subsecuentes.",
+    "3. EventBus DLQ / Non-Blocking Retry: Enviar reintentos a una cola diferida (time.AfterFunc) para liberar workers y evitar starvation.",
+    "4. Swarm Circuit Breaker: Implementar un max_subagent_depth transversal inyectado en el contexto del enjambre para abortar cadenas A2A infinitas."
+  ]
 }

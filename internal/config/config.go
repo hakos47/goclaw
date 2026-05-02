@@ -228,6 +228,7 @@ type MemoryConfig struct {
 type DreamingConfig struct {
 	Enabled    *bool `json:"enabled,omitempty"`     // default true (nil = enabled)
 	DebounceMs int   `json:"debounce_ms,omitempty"` // min interval between runs per agent/user (default 600000 = 10 min)
+	JitterMs   int   `json:"jitter_ms,omitempty"`   // max randomized delay before starting consolidation (default 0)
 	Threshold  int   `json:"threshold,omitempty"`   // min unpromoted entries before running (default 5)
 	VerboseLog *bool `json:"verbose_log,omitempty"` // log debounce/below-threshold skips at info level (default false)
 }

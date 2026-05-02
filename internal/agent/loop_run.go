@@ -19,6 +19,11 @@ func (l *Loop) Run(ctx context.Context, req RunRequest) (*RunResult, error) {
 	l.activeRuns.Add(1)
 	defer l.activeRuns.Add(-1)
 
+	// Clean up RBAC cache after run completes (NIX-0 TASK-035)
+	if l.toolPolicy != nil {
+		defer l.toolPolicy.CleanupRun(req.RunID)
+	}
+
 	// Per-run emit wrapper: enriches every AgentEvent with delegation + routing context.
 	emitRun := func(event AgentEvent) {
 		event.RunKind = req.RunKind
@@ -56,6 +61,13 @@ func (l *Loop) Run(ctx context.Context, req RunRequest) (*RunResult, error) {
 	// Create trace
 	var traceID uuid.UUID
 	isChildTrace := req.ParentTraceID != uuid.Nil && l.traceCollector != nil
+
+	// Swarm Depth Circuit Breaker (NIX-0 TASK-035)
+	depth := store.SwarmDepthFromCtx(ctx)
+	if isChildTrace {
+		depth++
+	}
+	ctx = store.WithSwarmDepth(ctx, depth)
 
 	// agentSpanID holds the pre-generated root agent span ID.
 	// Used by emitAgentSpanEnd in the deferred finalizer below.

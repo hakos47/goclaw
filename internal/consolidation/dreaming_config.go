@@ -15,6 +15,7 @@ import (
 type resolvedDreamingConfig struct {
 	Enabled    bool
 	Debounce   time.Duration
+	Jitter     time.Duration
 	Threshold  int
 	VerboseLog bool
 }
@@ -26,6 +27,7 @@ func defaultDreamingConfig() resolvedDreamingConfig {
 	return resolvedDreamingConfig{
 		Enabled:    true,
 		Debounce:   dreamingDefaultDebounce,
+		Jitter:     0,
 		Threshold:  dreamingDefaultThreshold,
 		VerboseLog: false,
 	}
@@ -44,6 +46,9 @@ func mergeDreamingConfig(base resolvedDreamingConfig, override *config.DreamingC
 	}
 	if override.DebounceMs > 0 {
 		base.Debounce = time.Duration(override.DebounceMs) * time.Millisecond
+	}
+	if override.JitterMs > 0 {
+		base.Jitter = time.Duration(override.JitterMs) * time.Millisecond
 	}
 	if override.Threshold > 0 {
 		base.Threshold = override.Threshold

@@ -138,7 +138,7 @@ func (l *Loop) runMemoryFlush(ctx context.Context, sessionKey string, settings *
 		l.agentUUID.String(),
 		l.model,
 		l.workspace,
-		l.filteredToolNames(),
+		l.filteredToolNames(""),
 		l.hasMemory,
 		providerTypeOf(l.provider),
 	))
@@ -178,7 +178,7 @@ func (l *Loop) runMemoryFlush(ctx context.Context, sessionKey string, settings *
 	// Build tool list — only file tools needed for memory flush
 	var toolDefs []providers.ToolDefinition
 	if l.toolPolicy != nil {
-		toolDefs = l.toolPolicy.FilterTools(l.tools, l.id, l.provider.Name(), nil, nil, false, false)
+		toolDefs = l.toolPolicy.FilterTools(l.tools, "", l.id, l.provider.Name(), nil, nil, false, false)
 	} else {
 		toolDefs = l.tools.ProviderDefs()
 	}

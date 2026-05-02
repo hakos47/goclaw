@@ -50,6 +50,8 @@ const (
 	SenderNameKey contextKey = "goclaw_sender_name"
 	// AgentAudioKey carries the immutable agent audio snapshot for TTS tool dispatch.
 	AgentAudioKey contextKey = "goclaw_agent_audio"
+	// SwarmDepthKey is the context key for the swarm (recursive spawn) depth.
+	SwarmDepthKey contextKey = "goclaw_swarm_depth"
 )
 
 // AgentAudioSnapshot is an immutable snapshot of agent audio config carried through
@@ -58,6 +60,19 @@ const (
 type AgentAudioSnapshot struct {
 	AgentID     uuid.UUID
 	OtherConfig json.RawMessage // immutable byte copy — never mutate after insertion
+}
+
+// WithSwarmDepth returns a new context with the given swarm depth.
+func WithSwarmDepth(ctx context.Context, depth int) context.Context {
+	return context.WithValue(ctx, SwarmDepthKey, depth)
+}
+
+// SwarmDepthFromCtx extracts the swarm depth from context. Returns 0 if not set.
+func SwarmDepthFromCtx(ctx context.Context) int {
+	if v, ok := ctx.Value(SwarmDepthKey).(int); ok {
+		return v
+	}
+	return 0
 }
 
 // WithAgentAudio returns a new context with the given agent audio snapshot.

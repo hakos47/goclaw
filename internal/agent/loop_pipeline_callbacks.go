@@ -131,7 +131,7 @@ func (l *Loop) makeLoadContextFiles() func(ctx context.Context, userID string) (
 
 func (l *Loop) makeBuildMessages() func(ctx context.Context, input *pipeline.RunInput, history []providers.Message, summary string) ([]providers.Message, error) {
 	return func(ctx context.Context, input *pipeline.RunInput, history []providers.Message, summary string) ([]providers.Message, error) {
-		msgs, _ := l.buildMessages(ctx, history, summary,
+		msgs, _ := l.buildMessages(ctx, input.RunID, history, summary,
 			input.Message, input.ExtraSystemPrompt,
 			input.SessionKey, input.Channel, input.ChannelType,
 			input.ChatTitle, input.ChatID, input.PeerKind, input.UserID,

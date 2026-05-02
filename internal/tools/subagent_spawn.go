@@ -35,10 +35,10 @@ func (sm *SubagentManager) Spawn(
 
 	sm.mu.Lock()
 
-	// Check depth limit
-	if depth >= cfg.MaxSpawnDepth {
+	// Check depth limit (Swarm Circuit Breaker - NIX-0 TASK-035)
+	if depth >= 3 {
 		sm.mu.Unlock()
-		return "", fmt.Errorf("spawn depth limit reached (%d/%d)", depth, cfg.MaxSpawnDepth)
+		return "", fmt.Errorf("403 Forbidden: swarm depth limit reached (depth=%d)", depth)
 	}
 
 	// Check concurrent limit (scoped per tenant for isolation).

@@ -26,11 +26,11 @@ func filterBootstrapTools(toolNames []string) []string {
 
 // filteredToolNames returns tool names after applying policy filters.
 // Used for system prompt so denied tools don't appear in ## Tooling section.
-func (l *Loop) filteredToolNames() []string {
+func (l *Loop) filteredToolNames(runID string) []string {
 	if l.toolPolicy == nil {
 		return l.tools.List()
 	}
-	defs := l.toolPolicy.FilterTools(l.tools, l.id, l.provider.Name(), l.agentToolPolicy, nil, false, false)
+	defs := l.toolPolicy.FilterTools(l.tools, runID, l.id, l.provider.Name(), l.agentToolPolicy, nil, false, false)
 	names := make([]string, len(defs))
 	for i, d := range defs {
 		names[i] = d.Function.Name
@@ -42,8 +42,8 @@ func (l *Loop) filteredToolNames() []string {
 // and ChannelAware filters. Tools that implement ChannelAware and don't list
 // the current channelType are excluded — keeps the system prompt Tooling
 // section consistent with the actual tool definitions sent to the LLM.
-func (l *Loop) filteredToolNamesForChannel(channelType string) []string {
-	names := l.filteredToolNames()
+func (l *Loop) filteredToolNamesForChannel(runID string, channelType string) []string {
+	names := l.filteredToolNames(runID)
 	if channelType == "" {
 		return names
 	}

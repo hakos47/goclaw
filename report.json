@@ -1,0 +1,24 @@
+{
+  "task_id": "225abb48-0e91-44e1-a14d-8e9f533bf425",
+  "status": "DONE",
+  "agent_id": "nix-auditor",
+  "report": {
+    "verdict": "ACTION_REQUIRED",
+    "metrics": {
+      "hooks": "pre_tool_use O(N) blocking per tool call",
+      "rbac": "Lock contention O(N) in buildFilteredTools due to RLock in PolicyEngine",
+      "eventbus": "Worker starvation risk (default 2 workers blocking on time.Sleep for retries)"
+    },
+    "findings": [
+      "HOOKS PIPELINE: pre_tool_use es bloqueante y añade latencia síncrona. post_tool_use es async pero carece de un pool controlado (puede causar goroutine leaks).",
+      "RECURSIVIDAD: Aunque dispatcher.go tiene un MaxLoopDepth de 3, el agente principal carece de un límite global absoluto (max_subagent_depth) para enjambres.",
+      "RBAC IMPACT: En internal/tools/policy.go, filterByCapability lee metadatos bajo un RLock (pe.mu.RLock()) para cada herramienta en cada turno, lo que creará contención alta bajo carga de Swarm.",
+      "BOTTLENECK MESSAGE BUS: internal/eventbus/bus_impl.go realiza retries con backoff (time.Sleep) directamente en el goroutine del worker principal. Al haber pocos workers (defecto 2), 2 eventos fallidos paralizan por completo el bus."
+    ],
+    "proposals": [
+      "Implementar Swarm-level Timeout (Circuit Breaker) en el Loop principal del agente (internal/agent/loop.go).",
+      "Refactorizar EventBus: Usar Dead Letter Queue (DLQ) o re-encolar con delay (time.AfterFunc) en lugar de time.Sleep bloqueante.",
+      "Caché en PolicyEngine: Pre-calcular la lista de herramientas permitidas por perfil/capacidades para evitar lock contention (RLock) en cada turno."
+    ]
+  }
+}

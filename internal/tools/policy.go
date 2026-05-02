@@ -89,35 +89,35 @@ var leafSubagentDenyList = []string{
 // PolicyEngine evaluates tool access based on layered config policies.
 type PolicyEngine struct {
 	globalPolicy     *config.ToolsConfig
-	mu               sync.RWMutex     // protects denyCapabilities + registry
+	mu               sync.RWMutex     // protects denyCapabilities + registry + rbacCache
 	denyCapabilities []ToolCapability // capability-based deny rules (v3)
 	registry         *Registry        // for metadata lookups (nil = skip capability checks)
+	rbacCache        map[string][]providers.ToolDefinition // key: runID -> cached defs
 }
 
 // NewPolicyEngine creates a policy engine from global config.
 func NewPolicyEngine(cfg *config.ToolsConfig) *PolicyEngine {
-	return &PolicyEngine{globalPolicy: cfg}
+	return &PolicyEngine{
+		globalPolicy: cfg,
+		rbacCache:    make(map[string][]providers.ToolDefinition),
+	}
 }
 
-// SetRegistry enables capability-based filtering by providing metadata lookups.
-func (pe *PolicyEngine) SetRegistry(r *Registry) {
+// CleanupRun removes cached results for a completed run to free memory.
+func (pe *PolicyEngine) CleanupRun(runID string) {
+	if runID == "" {
+		return
+	}
 	pe.mu.Lock()
 	defer pe.mu.Unlock()
-	pe.registry = r
-}
-
-// DenyCapability adds a capability to the deny list.
-// Tools with this capability are excluded from FilterTools results.
-func (pe *PolicyEngine) DenyCapability(cap ToolCapability) {
-	pe.mu.Lock()
-	defer pe.mu.Unlock()
-	pe.denyCapabilities = append(pe.denyCapabilities, cap)
+	delete(pe.rbacCache, runID)
 }
 
 // FilterTools returns only the tools allowed by the policy for the given context.
 // It evaluates the 7-step pipeline and returns filtered provider definitions.
 func (pe *PolicyEngine) FilterTools(
 	registry ToolExecutor,
+	runID string,
 	agentID string,
 	providerName string,
 	agentToolPolicy *config.ToolPolicySpec,
@@ -125,6 +125,16 @@ func (pe *PolicyEngine) FilterTools(
 	isSubagent bool,
 	isLeafAgent bool,
 ) []providers.ToolDefinition {
+	// Check cache first if runID is provided
+	if runID != "" {
+		pe.mu.RLock()
+		if cached, ok := pe.rbacCache[runID]; ok {
+			pe.mu.RUnlock()
+			return cached
+		}
+		pe.mu.RUnlock()
+	}
+
 	allTools := registry.List()
 	allowed := pe.evaluate(allTools, providerName, agentToolPolicy, groupToolAllow)
 
@@ -189,15 +199,21 @@ func (pe *PolicyEngine) FilterTools(
 
 	slog.Debug("tool policy applied",
 		"agent", agentID,
-		"provider", providerName,
+		"run_id", runID,
 		"total_tools", len(allTools),
 		"allowed", len(defs),
 		"is_subagent", isSubagent,
 	)
 
+	// Store in cache
+	if runID != "" {
+		pe.mu.Lock()
+		pe.rbacCache[runID] = defs
+		pe.mu.Unlock()
+	}
+
 	return defs
 }
-
 // evaluate runs the 7-step policy pipeline.
 func (pe *PolicyEngine) evaluate(
 	allTools []string,

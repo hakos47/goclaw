@@ -138,20 +138,34 @@ func (b *busImpl) dispatch(event DomainEvent) {
 	}
 }
 
-// callWithRetry calls handler with exponential backoff retry on error.
+// callWithRetry schedules handler execution with non-blocking exponential backoff.
 func (b *busImpl) callWithRetry(handler DomainEventHandler, event DomainEvent) {
-	delay := b.cfg.RetryDelay
-	for attempt := range b.cfg.RetryAttempts {
-		err := b.safeCall(handler, event)
-		if err == nil {
-			return
-		}
-		slog.Warn("eventbus: handler error",
-			"type", event.Type, "attempt", attempt+1, "err", err)
-		if attempt < b.cfg.RetryAttempts-1 {
-			time.Sleep(delay)
-			delay *= 2
-		}
+	b.wg.Add(1)
+	b.executeWithRetry(handler, event, 0, b.cfg.RetryDelay)
+}
+
+func (b *busImpl) executeWithRetry(handler DomainEventHandler, event DomainEvent, attempt int, delay time.Duration) {
+	// Ensure we don't start new attempts if the bus is stopping.
+	if b.ctx.Err() != nil {
+		b.wg.Done()
+		return
+	}
+
+	err := b.safeCall(handler, event)
+	if err == nil {
+		b.wg.Done()
+		return
+	}
+
+	slog.Warn("eventbus: handler error",
+		"type", event.Type, "attempt", attempt+1, "err", err)
+
+	if attempt < b.cfg.RetryAttempts-1 {
+		time.AfterFunc(delay, func() {
+			b.executeWithRetry(handler, event, attempt+1, delay*2)
+		})
+	} else {
+		b.wg.Done()
 	}
 }
 
