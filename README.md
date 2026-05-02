@@ -93,6 +93,14 @@ make up
 
 `make up` automatically builds the binary with the **Svelte V2 embedded UI**, runs PostgreSQL migrations, and activates the Gateway.
 
+## 🛡️ Origen y Buenas Prácticas
+
+Este proyecto es un **fork oficial y mejorado** de [GoClaw Gateway](https://github.com/nextlevelbuilder/goclaw). Se mantiene bajo los estándares de transparencia y colaboración de la comunidad, integrando innovaciones propietarias bajo el protocolo NIX-0.
+
+- **Repositorio de Origen:** [github.com/nextlevelbuilder/goclaw](https://github.com/nextlevelbuilder/goclaw)
+- **Atribución:** Agradecimientos al equipo original de NLB por la arquitectura base de orquestación de agentes.
+- **Contribuciones:** Todas las mejoras de estabilidad (Latencia Zero), virtualización de media y el stack Svelte 5 son contribuciones específicas de esta rama de desarrollo.
+
 ## 🛡️ NIX-0 Protocol Compliance
 
 This project is maintained under the **NIX-0 Protocol v6.6**. Every modification follows strict **non-destructive** standards, ensuring neural integrity and historical logic preservation across the agent swarm.
