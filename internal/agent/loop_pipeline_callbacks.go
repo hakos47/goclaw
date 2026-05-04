@@ -131,6 +131,9 @@ func (l *Loop) makeLoadContextFiles() func(ctx context.Context, userID string) (
 
 func (l *Loop) makeBuildMessages() func(ctx context.Context, input *pipeline.RunInput, history []providers.Message, summary string) ([]providers.Message, error) {
 	return func(ctx context.Context, input *pipeline.RunInput, history []providers.Message, summary string) ([]providers.Message, error) {
+		// Load per-user MCP tools before the system prompt is built. The prompt's
+		// Tooling section and the policy cache both read from the registry.
+		l.getUserMCPTools(ctx, input.UserID)
 		msgs, _ := l.buildMessages(ctx, input.RunID, history, summary,
 			input.Message, input.ExtraSystemPrompt,
 			input.SessionKey, input.Channel, input.ChannelType,
@@ -243,9 +246,9 @@ func (l *Loop) makeCallLLM(req *RunRequest, emitRun func(AgentEvent)) func(ctx c
 		if req.ModelOverride != "" {
 			originalModel = req.ModelOverride
 		}
-		
+
 		triedEconomy := false
-		
+
 		// If model is already economy (e.g. from lead-gen routing), we will fallback to originalModel on error
 		if model == l.economyModel && model != originalModel {
 			triedEconomy = true
@@ -261,14 +264,14 @@ func (l *Loop) makeCallLLM(req *RunRequest, emitRun func(AgentEvent)) func(ctx c
 					}
 				}
 			}
-			
+
 			isSimple := len(lastUserMsg) > 0 && len(lastUserMsg) < 200 &&
 				!strings.Contains(lastUserMsg, "```") &&
 				!strings.Contains(lastUserMsg, "func ") &&
 				!strings.Contains(lastUserMsg, "def ") &&
 				!strings.Contains(lastUserMsg, "class ") &&
 				!strings.Contains(lastUserMsg, "{")
-				
+
 			if isSimple {
 				model = l.economyModel
 				triedEconomy = true
@@ -321,7 +324,7 @@ func (l *Loop) makeCallLLM(req *RunRequest, emitRun func(AgentEvent)) func(ctx c
 
 		var resp *providers.ChatResponse
 		var err error
-		
+
 		runChat := func() (*providers.ChatResponse, error) {
 			if req.Stream {
 				return provider.ChatStream(ctx, chatReq, func(chunk providers.StreamChunk) {
@@ -347,13 +350,13 @@ func (l *Loop) makeCallLLM(req *RunRequest, emitRun func(AgentEvent)) func(ctx c
 		}
 
 		resp, err = runChat()
-		
+
 		// TASK-019: Silent Fallback
 		if err != nil && triedEconomy {
 			slog.Warn("agent.loop: economy model failed, silent fallback to original", "agent", l.id, "err", err, "economy", model, "original", originalModel)
 			chatReq.Model = originalModel
 			model = originalModel
-			
+
 			// Retry block
 			resp, err = runChat()
 		}

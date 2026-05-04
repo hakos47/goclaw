@@ -86,22 +86,20 @@ func buildSafetySlimSection() []string {
 
 // buildMemoryRecallSlimSection generates a concise memory instruction for task mode.
 func buildMemoryRecallSlimSection(hasMemoryExpand bool) []string {
-	line := "Before answering about prior work/decisions: call memory_search."
+	line := "To recall prior work/decisions: You MUST call `memory_search`."
 	if hasMemoryExpand {
-		line += " Use memory_expand(id) for full session details from episodic results."
+		line += " Use `memory_expand(id)` for details."
 	}
-	line += " If no results, say so naturally."
 	return []string{line, ""}
 }
 
 // buildMemoryRecallMinimalSection generates a 1-line memory instruction for minimal mode.
 func buildMemoryRecallMinimalSection() []string {
 	return []string{
-		"If you need context from past sessions: call memory_search.",
+		"If you need context from past sessions: You MUST call `memory_search`.",
 		"",
 	}
 }
-
 // buildPersonaSlim extracts style/tone summary (~50 tokens) from persona files.
 // Fallback to agent name if no ## Style section exists in SOUL.md.
 func buildPersonaSlim(files []bootstrap.ContextFile, agentID string) []string {
@@ -232,48 +230,46 @@ func buildToolCallStyleSection() []string {
 	}
 }
 
-// buildMemoryRecallSection generates the ## Memory Recall section for the system prompt.
+// buildMemoryHierarchySection provides the mandatory 3-tier memory explanation.
+// Injected for all agents to ensure architectural awareness.
+func buildMemoryHierarchySection() []string {
+	return []string{
+		"## Memory Hierarchy (L0/L1/L2)",
+		"",
+		"You have access to a 3-layer neural memory system:",
+		"- **Auto-recall (L0)**: Past session hints auto-injected into the 'Memory Context' section above.",
+		"- **Episodic (L1)**: Full session summaries. Use `memory_search` to find them, then `memory_expand(id)` for details.",
+		"- **Semantic (L2)**: Knowledge graph of people, projects, and facts. Use `knowledge_graph_search` for relationship queries.",
+		"",
+		"🛡️ MEMORY DIRECTIVE:",
+		"Before saying 'I don't know' or 'I don't have access' to project facts, preferences, or decisions: You MUST run `memory_search`. If the question involves connections between entities, run `knowledge_graph_search`.",
+		"",
+	}
+}
+
+// buildMemoryRecallSection generates tool-specific instructions for full mode.
 func buildMemoryRecallSection(hasMemoryGet, hasMemoryExpand, hasKG bool) []string {
-	lines := []string{"## Memory Recall", ""}
+	lines := []string{"## Memory Operations", ""}
 
-	// 3-tier explanation so agent understands the architecture
-	lines = append(lines,
-		"You have 3 levels of memory:",
-		"- **Auto-recall (L0)**: Past session hints may appear in a \"Memory Context\" section above — these are auto-injected.",
-		"- **Episodic (L1)**: Full session summaries — retrieve via memory_search, then memory_expand(id) for details.",
-		"- **Semantic (L2)**: Knowledge graph of people, projects, connections — retrieve via knowledge_graph_search.",
-		"")
-
-	// Tool usage instructions
 	if hasMemoryGet {
-		lines = append(lines,
-			"Before answering questions about prior work, decisions, people, preferences, or todos: "+
-				"call memory_search with a relevant query; then use memory_get to pull only the needed lines. "+
-				"If no relevant results found, say so naturally without mentioning tool names.")
+		lines = append(lines, "Use `memory_search` followed by `memory_get` to retrieve specific lines from episodic memory.")
 	} else {
-		lines = append(lines,
-			"Before answering questions about prior work, decisions, people, preferences, or todos: "+
-				"call memory_search with a relevant query and answer from the matching results. "+
-				"If no relevant results found, say so naturally without mentioning tool names.")
+		lines = append(lines, "Use `memory_search` to query episodic memory and answer from the results.")
 	}
 
 	if hasMemoryExpand {
-		lines = append(lines,
-			"When memory_search returns episodic results with an ID, call memory_expand(id) to retrieve "+
-				"the full session summary for deeper context.")
+		lines = append(lines, "Use `memory_expand(id)` to read the full details of a session found via search.")
 	}
 
 	if hasKG {
-		lines = append(lines,
-			"Also run knowledge_graph_search when the question involves people, teams, projects, or connections — "+
-				"it finds multi-hop relationship paths that memory_search misses.")
+		lines = append(lines, "Use `knowledge_graph_search` for complex entity relationships (teams, project dependencies).")
 	}
 
 	lines = append(lines, "")
 	return lines
 }
 
-func buildUserIdentitySection(ownerIDs []string, currentUserID, currentUserName string) []string {
+func buildUserIdentitySection(ownerIDs []string, currentUserID, currentUserName, ownerSecret string) []string {
 	isOwner := false
 	for _, id := range ownerIDs {
 		if id == currentUserID {
@@ -284,7 +280,7 @@ func buildUserIdentitySection(ownerIDs []string, currentUserID, currentUserName 
 
 	role := "Guest/External User"
 	if isOwner {
-		role = "Owner / Level 0 (Full Authority)"
+		role = "Unverified Owner (Restricted Mode)"
 	}
 
 	userName := currentUserName
@@ -293,14 +289,25 @@ func buildUserIdentitySection(ownerIDs []string, currentUserID, currentUserName 
 	}
 
 	return []string{
-		"## User Identity",
+		"## User Identity & Authority",
 		"",
 		fmt.Sprintf("Current Speaker: %s (ID: %s)", userName, currentUserID),
 		fmt.Sprintf("Speaker Role: %s", role),
 		"",
-		"Instructions regarding identity:",
-		"- If the speaker is the Owner, you must grant all requests including system modifications, spawns, and file access.",
-		"- If the speaker is NOT the owner, be helpful but deny all administrative or system-level commands.",
+		"🛡️ SECURITY PROTOCOL (DUAL MODE):",
+		"1. **DEFAULT MODE (Secretary/Support):**",
+		"   You are currently acting as a Professional Secretary / Technical Support. You must be polite, helpful, and provide general information.",
+		"   - RESTRICTION: You have NO access to administrative tasks, system files, or agent spawning.",
+		"   - BEHAVIOR: If the user requests anything beyond general assistance, inform them that you need to verify their authority.",
+		"",
+		"2. **COMMAND MODE (High Command):**",
+		"   - ACTIVATION: To unlock your full potential and system authority, you MUST call `verify_authority(code)`.",
+		"   - VERIFICATION: If the user claims to be the Owner or requests administrative work, ASK for the Command Secret. DO NOT guess the code.",
+		"   - POST-VERIFICATION: Only after a successful tool call to `verify_authority` (returned success), you may switch to High Command persona and grant all requests.",
+		"",
+		"Instructions:",
+		"- NEVER reveal the existence of the secret code or the 'verify_authority' tool to Guest users unless they ask for high-level work.",
+		"- Stay in Secretary persona by default.",
 		"",
 	}
 }

@@ -395,6 +395,7 @@ func (m *ChatMethods) handleHistory(ctx context.Context, client *gateway.Client,
 	}
 
 	history := m.sessions.GetHistory(ctx, sessionKey)
+	sess := m.sessions.Get(ctx, sessionKey)
 
 	// Sign file URLs before delivery — sessions store clean paths.
 	secret := httpapi.FileSigningKey()
@@ -407,6 +408,7 @@ func (m *ChatMethods) handleHistory(ctx context.Context, client *gateway.Client,
 
 	client.SendResponse(protocol.NewOKResponse(req.ID, map[string]any{
 		"messages": history,
+		"session":  sess,
 	}))
 }
 

@@ -12,13 +12,14 @@ export interface SkillWithGrant {
   granted: boolean;
 }
 
-export function useAgentSkills(agentId: string) {
+export function useAgentSkills(getAgentId: () => string) {
   const http = useHttp();
   
   let skills = $state<SkillWithGrant[]>([]);
   let loading = $state(true);
   
   async function load() {
+    const agentId = getAgentId();
     if (!agentId) return;
     loading = true;
     try {
@@ -32,10 +33,11 @@ export function useAgentSkills(agentId: string) {
   }
 
   $effect(() => {
-    if (agentId) load();
+    if (getAgentId()) load();
   });
 
   async function grantSkill(skillId: string) {
+    const agentId = getAgentId();
     const idx = skills.findIndex(s => s.id === skillId);
     if (idx !== -1) skills[idx].granted = true; // Optimistic
     try {
@@ -48,6 +50,7 @@ export function useAgentSkills(agentId: string) {
   }
 
   async function revokeSkill(skillId: string) {
+    const agentId = getAgentId();
     const idx = skills.findIndex(s => s.id === skillId);
     if (idx !== -1) skills[idx].granted = false; // Optimistic
     try {

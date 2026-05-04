@@ -35,8 +35,21 @@ export async function loadSessions(agentId?: string) {
         };
 
         sessionsState.sessions.forEach((s) => {
-            const type = s.channelType || "";
-            const isSystem = s.key.includes("system");
+            let type = s.channelType || "";
+            const key = s.key || "";
+            
+            // Infer type from key if missing
+            if (!type) {
+                if (key.includes(":whatsapp:") || key.includes(":facebook:") || key.includes(":hakos-p1:")) {
+                    type = "whatsapp";
+                } else if (key.includes(":telegram:") || key.includes(":discord:")) {
+                    type = "telegram";
+                } else if (key.includes(":internal:") || key.includes(":evolution:")) {
+                    type = "evolution";
+                }
+            }
+
+            const isSystem = key.includes("system");
 
             if (["whatsapp", "facebook"].includes(type)) {
                 groups.inbound.push(s);

@@ -705,7 +705,7 @@ func TestBuildMessagesLimit_WhatsApp(t *testing.T) {
 			history[i] = providers.Message{Role: "assistant", Content: "a"}
 		}
 	}
-	msgs, _ := loop.buildMessages(context.Background(), history, "", "", "", "", "", "whatsapp", "", "", "direct", "", 0, nil, true)
+	msgs, _ := loop.buildMessages(context.Background(), "", history, "", "", "", "", "", "whatsapp", "", "", "direct", "", 0, nil, true)
 	if len(msgs) != 32 {
 		// 1 system + 30 history + 1 user message (current)
 		t.Errorf("expected 32 messages (1 system + 30 history + 1 current), got %d", len(msgs))
@@ -725,7 +725,7 @@ func TestBuildMessagesLimit_WS(t *testing.T) {
 			history[i] = providers.Message{Role: "assistant", Content: "a"}
 		}
 	}
-	msgs, _ := loop.buildMessages(context.Background(), history, "", "", "", "", "", "ws", "", "", "direct", "", 0, nil, true)
+	msgs, _ := loop.buildMessages(context.Background(), "", history, "", "", "", "", "", "ws", "", "", "direct", "", 0, nil, true)
 	if len(msgs) != 102 {
 		// 1 system + 100 history + 1 user message (current)
 		t.Errorf("expected 102 messages (1 system + 100 history + 1 current), got %d", len(msgs))
@@ -745,15 +745,15 @@ func TestBuildMessagesLimit_Default(t *testing.T) {
 			history[i] = providers.Message{Role: "assistant", Content: "a"}
 		}
 	}
-	
+
 	// Test explicit limit overrides default 30
-	msgs1, _ := loop.buildMessages(context.Background(), history, "", "", "", "", "", "api", "", "", "direct", "", 10, nil, true)
+	msgs1, _ := loop.buildMessages(context.Background(), "", history, "", "", "", "", "", "api", "", "", "direct", "", 10, nil, true)
 	if len(msgs1) != 22 {
 		t.Errorf("expected 22 messages (1 system + 20 history + 1 current), got %d", len(msgs1))
 	}
-	
+
 	// Test default 30 turns applies if limit <= 0
-	msgs2, _ := loop.buildMessages(context.Background(), history, "", "", "", "", "", "api", "", "", "direct", "", 0, nil, true)
+	msgs2, _ := loop.buildMessages(context.Background(), "", history, "", "", "", "", "", "api", "", "", "direct", "", 0, nil, true)
 	if len(msgs2) != 62 {
 		t.Errorf("expected 62 messages (1 system + 60 history + 1 current), got %d", len(msgs2))
 	}

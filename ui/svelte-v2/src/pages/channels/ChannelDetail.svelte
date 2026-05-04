@@ -46,7 +46,7 @@
   const ESSENTIAL_CONFIG_KEYS: Record<string, string[]> = {
     _default: ["dm_policy", "group_policy", "require_mention"],
     telegram: ["dm_policy", "group_policy", "mention_mode", "require_mention"],
-    whatsapp: ["owner_jid", "owner_user_id", "dm_policy", "group_policy", "require_mention"],
+    whatsapp: ["authority_code", "owner_jid", "owner_user_id", "dm_policy", "group_policy", "require_mention"],
   };
 
   type Props = {

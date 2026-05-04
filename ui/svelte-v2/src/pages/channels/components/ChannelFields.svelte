@@ -1,12 +1,9 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
-  import { Search, Loader2, X } from "lucide-svelte";
+  import { Search, Loader2, X, Eye, EyeOff, RefreshCw } from "lucide-svelte";
   import type { FieldDef } from "../channel-schemas";
-  import { useWs } from "$lib/state/ws.svelte";
+  import { useWs, getHttpClient } from "$lib/state/ws.svelte";
   import { Methods } from "$lib/api/protocol";
-  // Assuming a toast store exists or just using console for now if not sure, 
-  // but let's try to match the project's feedback mechanism if found.
-  // In ChannelDetail.svelte it uses alert/confirm, so I'll stick to that or basic feedback.
 
   type Props = {
     fields: FieldDef[];
@@ -29,6 +26,7 @@
   }: Props = $props();
 
   let allValues = $derived({ ...contextValues, ...values });
+  let passwordVisibility = $state<Record<string, boolean>>({});
 
   function isFieldVisible(field: FieldDef) {
     if (!field.showWhen) return true;
@@ -53,13 +51,13 @@
   let actionLoading = $state<Record<string, boolean>>({});
 
   async function handleAction(field: FieldDef, value: string) {
-    if (!field.action || !value || !instanceId) return;
+    if (!field.action) return;
 
     actionLoading[field.key] = true;
     const ws = useWs();
 
     try {
-      if (field.action.type === "whatsapp_resolve_jid") {
+      if (field.action.type === "whatsapp_resolve_jid" && instanceId) {
         const res = await ws.call(Methods.WHATSAPP_ID_RESOLVE, {
           instance_id: instanceId,
           phone: value
@@ -69,14 +67,42 @@
           onChange(field.key, res.jid);
           alert(`Identity Resolved: ${res.jid}`);
         }
-      } else if (field.action.type === "whatsapp_verify_code") {
-        await ws.call(Methods.PAIRING_APPROVE, {
-          code: value.trim().toUpperCase(),
-          approvedBy: "dashboard-owner"
-        });
+      } else if (field.action.type === "whatsapp_get_owner_secret") {
+        const http = getHttpClient();
+        const manualValue = value?.trim();
+
+        if (manualValue) {
+          // Update mode: Save the manually entered code
+          await http.put(`/v1/system-configs/gateway.owner_secret`, { value: manualValue });
+          alert(`Authority Secret updated successfully to: ${manualValue}`);
+          passwordVisibility[field.key] = false; // Hide after saving
+        } else {
+          // Reveal mode: Fetch current secret
+          const res = await http.get<{ value: string }>(`/v1/system-configs/gateway.owner_secret`);
+          if (res.value) {
+            onChange(field.key, res.value);
+            passwordVisibility[field.key] = true; // Automatically reveal when fetched
+          } else {
+            alert("Authority Secret not set in system config.");
+          }
+        }
+      } else if (field.action.type === "whatsapp_rotate_owner_secret") {
+        const http = getHttpClient();
+        let newValue = value?.trim();
         
-        onChange(field.key, "");
-        alert("Code Validated successfully.");
+        if (!newValue) {
+          // Generate random 6-digit code if empty
+          newValue = Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        try {
+          await http.put(`/v1/system-configs/gateway.owner_secret`, { value: newValue });
+          onChange(field.key, newValue);
+          passwordVisibility[field.key] = true; // Show the new code
+          alert(`Authority Secret updated to: ${newValue}`);
+        } catch (err: any) {
+          alert(`Rotation Failed: ${err.message || String(err)}`);
+        }
       }
     } catch (err: any) {
       alert(`Action Failed: ${err.message || String(err)}`);
@@ -102,7 +128,7 @@
             {#if field.required && !isEdit}
               <span class="text-red-500/50 ml-0.5">*</span>
             {/if}
-            {#if isEdit && field.type === 'password'}
+            {#if isEdit && field.type === 'password' && field.key !== 'authority_code'}
               <span class="text-blue-400/50 normal-case font-medium tracking-normal ml-1">
                 ({$_('channels.form.credentialsHint', { default: 'leave blank to keep' })})
               </span>
@@ -111,29 +137,60 @@
         </div>
 
         {#if field.type === 'text' || field.type === 'password'}
+          {@const isVisible = passwordVisibility[field.key] || field.type === 'text'}
           <div class="flex gap-2">
-            <input 
-              {id}
-              type={field.type}
-              value={values[field.key] ?? ""}
-              oninput={(e) => onChange(field.key, e.currentTarget.value)}
-              placeholder={field.placeholder}
-              class="flex-1 bg-[#030014] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-goclaw-neon-purple focus:ring-1 focus:ring-goclaw-neon-purple/30 transition-all outline-none text-white placeholder:text-white/10"
-            />
+            <div class="relative flex-1 group/pw">
+              <input 
+                {id}
+                type={isVisible ? 'text' : 'password'}
+                value={values[field.key] ?? ""}
+                oninput={(e) => onChange(field.key, e.currentTarget.value)}
+                placeholder={field.placeholder}
+                class="w-full bg-[#030014] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-goclaw-neon-purple focus:ring-1 focus:ring-goclaw-neon-purple/30 transition-all outline-none text-white placeholder:text-white/10"
+              />
+              {#if field.type === 'password'}
+                <button
+                  type="button"
+                  onclick={() => passwordVisibility[field.key] = !passwordVisibility[field.key]}
+                  class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/20 hover:text-goclaw-neon-purple transition-colors"
+                >
+                  {#if isVisible}
+                    <EyeOff class="w-4 h-4" />
+                  {:else}
+                    <Eye class="w-4 h-4" />
+                  {/if}
+                </button>
+              {/if}
+            </div>
             {#if field.action}
               <button
                 type="button"
                 onclick={() => handleAction(field, values[field.key] ?? "")}
-                disabled={actionLoading[field.key] || !values[field.key]}
+                disabled={actionLoading[field.key] || (field.action.type === "whatsapp_resolve_jid" && !values[field.key])}
                 class="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/5 transition-all disabled:opacity-50"
               >
                 {#if actionLoading[field.key]}
                   <Loader2 class="w-3.5 h-3.5 animate-spin" />
+                {:else if field.action.type === 'whatsapp_rotate_owner_secret'}
+                  <RefreshCw class="w-3.5 h-3.5 text-goclaw-neon-purple" />
                 {:else}
                   <Search class="w-3.5 h-3.5 text-goclaw-neon-cyan" />
                 {/if}
                 <span class="hidden sm:inline">{field.action.label}</span>
               </button>
+
+              {#if field.key === 'authority_code'}
+                <!-- Secondary Reveal button for authority_code -->
+                <button
+                  type="button"
+                  onclick={() => handleAction({ ...field, action: { type: "whatsapp_get_owner_secret", label: "Reveal" } }, "")}
+                  disabled={actionLoading[field.key]}
+                  class="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/5 transition-all"
+                >
+                  <Search class="w-3.5 h-3.5 text-goclaw-neon-cyan" />
+                  <span class="hidden sm:inline">Reveal</span>
+                </button>
+              {/if}
             {/if}
           </div>
 

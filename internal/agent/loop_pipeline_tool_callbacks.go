@@ -44,6 +44,15 @@ func (l *Loop) makeExecuteToolCall(req *RunRequest, bridgeRS *runState) func(ctx
 			})
 		}
 
+		// Check session authorization for critical tools (NIX-0 Mandate)
+		sessionKey := req.SessionKey
+		if sessionKey != "" && l.sessions != nil {
+			meta := l.sessions.GetSessionMetadata(ctx, sessionKey)
+			if meta["authorized_level"] == "0" {
+				ctx = tools.WithAuthorityVerified(ctx, true)
+			}
+		}
+
 		result := l.tools.ExecuteWithContext(ctx, registryName, tc.Arguments,
 			req.Channel, req.ChatID, req.PeerKind, req.SessionKey, nil)
 		toolDuration := time.Since(toolStart)
@@ -99,6 +108,23 @@ func (l *Loop) makeExecuteToolRaw(req *RunRequest) func(ctx context.Context, tc 
 				AgentID:     l.agentUUID,
 				OtherConfig: append([]byte(nil), l.agentOtherConfig...), // defensive copy at dispatch
 			})
+		}
+
+		// Check session authorization for critical tools (NIX-0 Mandate)
+		sessionKey := req.SessionKey
+		if sessionKey != "" && l.sessions != nil {
+			meta := l.sessions.GetSessionMetadata(ctx, sessionKey)
+			if meta["authorized_level"] == "0" {
+				ctx = tools.WithAuthorityVerified(ctx, true)
+			}
+		}
+
+		// Check session authorization for critical tools (NIX-0 Mandate)
+		if req.SessionKey != "" && l.sessions != nil {
+			meta := l.sessions.GetSessionMetadata(ctx, req.SessionKey)
+			if meta["authorized_level"] == "0" {
+				ctx = tools.WithAuthorityVerified(ctx, true)
+			}
 		}
 
 		result := l.tools.ExecuteWithContext(ctx, registryName, tc.Arguments,

@@ -12,7 +12,7 @@
 
   const MAX_PINNED = 10;
 
-  let skillsManager = useAgentSkills(agent.id);
+  let skillsManager = useAgentSkills(() => agent.id);
   
   function readPinnedSkills(ag: AgentData): string[] {
     const bag = (ag.other_config ?? {}) as Record<string, unknown>;

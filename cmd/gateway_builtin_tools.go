@@ -129,6 +129,10 @@ func builtinToolSeedData() []store.BuiltinToolDef {
 		{Name: "whatsapp_test_target", DisplayName: "WhatsApp Diagnostic", Description: "Run a complete diagnostic test against a phone number (profile info, photo, and bio).", Category: "whatsapp", Enabled: true,
 			Requires: []string{"channel:whatsapp"},
 		},
+		{Name: "whatsapp_verify_owner", DisplayName: "WhatsApp Verify Owner", Description: "Verify and persist the WhatsApp owner identity for a channel", Category: "whatsapp", Enabled: true,
+			Requires: []string{"channel:whatsapp"},
+		},
+		{Name: "verify_authority", DisplayName: "Verify Authority", Description: "Verify the user's authority using the configured command secret before administrative actions", Category: "security", Enabled: true},
 
 		// scheduling
 		{Name: "cron", DisplayName: "Cron Scheduler", Description: "Schedule or manage recurring tasks using cron expressions, at-times, or intervals", Category: "scheduling", Enabled: true,

@@ -9,7 +9,7 @@
 
   let { agentId }: Props = $props();
   
-  let skillsManager = useAgentSkills(agentId);
+  let skillsManager = useAgentSkills(() => agentId);
   let search = $state("");
   let toggling = $state<string | null>(null);
 

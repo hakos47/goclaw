@@ -44,7 +44,7 @@ func (l *Loop) filteredToolNames(runID string) []string {
 // section consistent with the actual tool definitions sent to the LLM.
 func (l *Loop) filteredToolNamesForChannel(runID string, channelType string) []string {
 	names := l.filteredToolNames(runID)
-	if channelType == "" {
+	if channelType == "" || channelType == "ws" {
 		return names
 	}
 	filtered := names[:0:0]

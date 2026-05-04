@@ -15,7 +15,7 @@ export interface HookConfig {
   source: "ui" | "api" | "seed" | "builtin";
 }
 
-export function useHooksList(filters?: { agentId?: string; scope?: string; event?: string }) {
+export function useHooksList(getFilters: () => { agentId?: string; scope?: string; event?: string } = () => ({})) {
   const ws = useWs();
   
   let hooks = $state<HookConfig[]>([]);
@@ -24,7 +24,7 @@ export function useHooksList(filters?: { agentId?: string; scope?: string; event
   async function load() {
     loading = true;
     try {
-      const res = await ws.call<{ hooks: HookConfig[] }>("hooks.list", filters ?? {});
+      const res = await ws.call<{ hooks: HookConfig[] }>("hooks.list", getFilters());
       hooks = res.hooks ?? [];
     } catch (e) {
       console.error(e);
@@ -35,6 +35,7 @@ export function useHooksList(filters?: { agentId?: string; scope?: string; event
   }
 
   $effect(() => {
+    getFilters(); // Track dependencies
     load();
   });
 

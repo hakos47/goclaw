@@ -99,12 +99,19 @@ func (s *PGPairingStore) ApprovePairing(ctx context.Context, code, approvedBy st
 	// Remove from pending
 	s.db.ExecContext(ctx, "DELETE FROM pairing_requests WHERE id = $1", reqID)
 
-	// Add to paired — use the request's tenant (the channel that initiated pairing)
+	// Add to paired — use the request's tenant (the channel that initiated pairing).
+	// Use UPSERT to allow re-pairing or refreshing existing pairings gracefully.
 	now := time.Now()
 	expiresAt := now.Add(pairedDeviceTTL)
 	_, err = s.db.ExecContext(ctx,
 		`INSERT INTO paired_devices (id, sender_id, channel, chat_id, paired_by, paired_at, metadata, expires_at, tenant_id)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		 ON CONFLICT (tenant_id, sender_id, channel) DO UPDATE SET
+		     chat_id = EXCLUDED.chat_id,
+		     paired_by = EXCLUDED.paired_by,
+		     paired_at = EXCLUDED.paired_at,
+		     expires_at = EXCLUDED.expires_at,
+		     metadata = EXCLUDED.metadata`,
 		uuid.Must(uuid.NewV7()), senderID, channel, chatID, approvedBy, now, metaJSON, expiresAt, reqTenantID,
 	)
 	if err != nil {

@@ -4,12 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"path/filepath"
 	"strings"
 
 	"github.com/google/uuid"
 
-	"github.com/nextlevelbuilder/goclaw/internal/bootstrap"
 	"github.com/nextlevelbuilder/goclaw/internal/store"
 )
 
@@ -22,52 +20,6 @@ func effectiveWorkspace(ctx context.Context, baseWorkspace string) string {
 		return ws
 	}
 	return baseWorkspace
-}
-
-// isMemoryDir checks if a path refers to the memory directory itself.
-// Handles "memory", "./memory", "/workspace/memory" etc.
-func isMemoryDir(path, workspace string) bool {
-	clean := filepath.Clean(path)
-	if clean == "memory" {
-		return true
-	}
-	if workspace != "" && filepath.IsAbs(clean) {
-		expected := filepath.Join(filepath.Clean(workspace), "memory")
-		return clean == expected
-	}
-	return false
-}
-
-// isMemoryPath checks if a path refers to a memory file (MEMORY.md, memory.md, memory/*).
-// Handles both relative and absolute paths (when workspace is provided).
-func isMemoryPath(path, workspace string) bool {
-	clean := filepath.Clean(path)
-	base := filepath.Base(clean)
-
-	// Root-level MEMORY.md or memory.md
-	dir := filepath.Dir(clean)
-	if (dir == "." || dir == "/" || dir == "") && (base == bootstrap.MemoryFile || base == bootstrap.MemoryAltFile) {
-		return true
-	}
-
-	// Anything under memory/ directory (relative)
-	if strings.HasPrefix(clean, "memory/") || strings.HasPrefix(clean, "memory\\") {
-		return true
-	}
-
-	// Absolute path at workspace root or under workspace/memory/
-	if workspace != "" && filepath.IsAbs(clean) {
-		cleanWS := filepath.Clean(workspace)
-		if filepath.Dir(clean) == cleanWS && (base == bootstrap.MemoryFile || base == bootstrap.MemoryAltFile) {
-			return true
-		}
-		memDir := filepath.Join(cleanWS, "memory")
-		if strings.HasPrefix(clean, memDir+string(filepath.Separator)) {
-			return true
-		}
-	}
-
-	return false
 }
 
 // KGExtractFunc is a callback invoked after a memory write to extract KG entities.
@@ -96,7 +48,7 @@ func (m *MemoryInterceptor) SetKGExtractFunc(fn KGExtractFunc) {
 // Returns (content, true, nil) if handled, or ("", false, nil) if not a memory path.
 func (m *MemoryInterceptor) ReadFile(ctx context.Context, path string) (string, bool, error) {
 	ws := effectiveWorkspace(ctx, m.workspace)
-	if !isMemoryPath(path, ws) {
+	if !IsMemoryPath(path, ws) {
 		return "", false, nil
 	}
 
@@ -147,7 +99,7 @@ type MemoryWriteResult struct {
 // PreviousContent is populated in the result to allow callers to warn the agent.
 func (m *MemoryInterceptor) WriteFile(ctx context.Context, path, content string, appendMode bool) (MemoryWriteResult, error) {
 	ws := effectiveWorkspace(ctx, m.workspace)
-	if !isMemoryPath(path, ws) {
+	if !IsMemoryPath(path, ws) {
 		return MemoryWriteResult{}, nil
 	}
 
@@ -213,7 +165,7 @@ func (m *MemoryInterceptor) WriteFile(ctx context.Context, path, content string,
 // Returns (listing, true, nil) if handled, or ("", false, nil) if not a memory path.
 func (m *MemoryInterceptor) ListFiles(ctx context.Context, path string) (string, bool, error) {
 	ws := effectiveWorkspace(ctx, m.workspace)
-	if !isMemoryDir(path, ws) {
+	if !IsMemoryDir(path, ws) {
 		return "", false, nil
 	}
 

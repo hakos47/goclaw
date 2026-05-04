@@ -158,33 +158,39 @@
         
         <div class="grid grid-cols-2 gap-6">
           <div class="space-y-2 relative group/input">
-            <label class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Hook Name</label>
-            <div class="relative">
-                <div class="absolute inset-0 border-2 border-transparent group-focus-within/input:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
-                <input type="text" bind:value={hookName} placeholder="Optional" class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-mono text-sm outline-none transition-colors relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]" />
-            </div>
+            <label class="block">
+                <span class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Hook Name</span>
+                <div class="relative mt-1">
+                    <div class="absolute inset-0 border-2 border-transparent group-focus-within/input:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
+                    <input type="text" bind:value={hookName} placeholder="Optional" class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-mono text-sm outline-none transition-colors relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]" />
+                </div>
+            </label>
           </div>
           <div class="space-y-2 relative group/select">
-            <label class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Trigger Event</label>
-            <div class="relative">
-                <div class="absolute inset-0 border-2 border-transparent group-focus-within/select:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
-                <select bind:value={event} class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-bold text-sm outline-none transition-colors appearance-none relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] cursor-pointer">
-                  {#each HOOK_EVENTS as e}
-                    <option value={e} class="bg-black">{e}</option>
-                  {/each}
-                </select>
-            </div>
+            <label class="block">
+                <span class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Trigger Event</span>
+                <div class="relative mt-1">
+                    <div class="absolute inset-0 border-2 border-transparent group-focus-within/select:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
+                    <select bind:value={event} class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-bold text-sm outline-none transition-colors appearance-none relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] cursor-pointer">
+                      {#each HOOK_EVENTS as e}
+                        <option value={e} class="bg-black">{e}</option>
+                      {/each}
+                    </select>
+                </div>
+            </label>
           </div>
           <div class="space-y-2 relative group/select">
-            <label class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Scope</label>
-            <div class="relative">
-                <div class="absolute inset-0 border-2 border-transparent group-focus-within/select:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
-                <select bind:value={scope} class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-bold text-sm outline-none transition-colors appearance-none relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] cursor-pointer">
-                  <option value="global" class="bg-black">global</option>
-                  <option value="tenant" class="bg-black">tenant</option>
-                  <option value="agent" class="bg-black">agent</option>
-                </select>
-            </div>
+            <label class="block">
+                <span class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Scope</span>
+                <div class="relative mt-1">
+                    <div class="absolute inset-0 border-2 border-transparent group-focus-within/select:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
+                    <select bind:value={scope} class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-bold text-sm outline-none transition-colors appearance-none relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] cursor-pointer">
+                      <option value="global" class="bg-black">global</option>
+                      <option value="tenant" class="bg-black">tenant</option>
+                      <option value="agent" class="bg-black">agent</option>
+                    </select>
+                </div>
+            </label>
           </div>
         </div>
 
@@ -232,49 +238,62 @@
 
         <div class="grid grid-cols-2 gap-6 pt-2">
           <div class="space-y-2 relative group/input">
-            <label class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Matcher Regex</label>
-            <div class="relative">
-                <div class="absolute inset-0 border-2 border-transparent group-focus-within/input:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
-                <input type="text" bind:value={matcher} placeholder="^bash$" class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-mono text-sm outline-none transition-colors relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]" />
-            </div>
+            <label class="block">
+                <span class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Matcher Regex</span>
+                <div class="relative mt-1">
+                    <div class="absolute inset-0 border-2 border-transparent group-focus-within/input:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
+                    <input type="text" bind:value={matcher} placeholder="^bash$" class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-mono text-sm outline-none transition-colors relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]" />
+                </div>
+            </label>
           </div>
           <div class="space-y-2 relative group/input">
-            <label class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">If Expression</label>
-            <div class="relative">
-                <div class="absolute inset-0 border-2 border-transparent group-focus-within/input:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
-                <input type="text" bind:value={ifExpr} placeholder="tool_input.path" class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-mono text-sm outline-none transition-colors relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]" />
-            </div>
+            <label class="block">
+                <span class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">If Expression</span>
+                <div class="relative mt-1">
+                    <div class="absolute inset-0 border-2 border-transparent group-focus-within/input:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
+                    <input type="text" bind:value={ifExpr} placeholder="tool_input.path" class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-mono text-sm outline-none transition-colors relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]" />
+                </div>
+            </label>
           </div>
         </div>
 
         <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 pt-2">
           <div class="space-y-2 relative group/input">
-            <label class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Timeout (ms)</label>
-            <div class="relative">
-                <div class="absolute inset-0 border-2 border-transparent group-focus-within/input:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
-                <input type="number" bind:value={timeoutMs} min="100" class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-mono text-sm outline-none transition-colors relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]" />
-            </div>
+            <label class="block">
+                <span class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Timeout (ms)</span>
+                <div class="relative mt-1">
+                    <div class="absolute inset-0 border-2 border-transparent group-focus-within/input:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
+                    <input type="number" bind:value={timeoutMs} min="100" class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-mono text-sm outline-none transition-colors relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]" />
+                </div>
+            </label>
           </div>
           <div class="space-y-2 relative group/select">
-            <label class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">On Timeout</label>
-            <div class="relative">
-                <div class="absolute inset-0 border-2 border-transparent group-focus-within/select:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
-                <select bind:value={onTimeout} class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-bold text-sm outline-none transition-colors appearance-none relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] cursor-pointer">
-                  <option value="block" class="bg-black">block</option>
-                  <option value="allow" class="bg-black">allow</option>
-                </select>
-            </div>
+            <label class="block">
+                <span class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">On Timeout</span>
+                <div class="relative mt-1">
+                    <div class="absolute inset-0 border-2 border-transparent group-focus-within/select:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
+                    <select bind:value={onTimeout} class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-bold text-sm outline-none transition-colors appearance-none relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] cursor-pointer">
+                      <option value="block" class="bg-black">block</option>
+                      <option value="allow" class="bg-black">allow</option>
+                    </select>
+                </div>
+            </label>
           </div>
           <div class="space-y-2 relative group/input">
-            <label class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Priority</label>
-            <div class="relative">
-                <div class="absolute inset-0 border-2 border-transparent group-focus-within/input:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
-                <input type="number" bind:value={priority} class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-mono text-sm outline-none transition-colors relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]" />
-            </div>
+            <label class="block">
+                <span class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Priority</span>
+                <div class="relative mt-1">
+                    <div class="absolute inset-0 border-2 border-transparent group-focus-within/input:border-purple-500/50 rounded-xl pointer-events-none transition-colors z-20 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]"></div>
+                    <input type="number" bind:value={priority} class="w-full h-11 px-4 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.05] border border-white/5 rounded-xl text-purple-400 font-mono text-sm outline-none transition-colors relative z-10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]" />
+                </div>
+            </label>
           </div>
           <div class="space-y-2">
-            <label class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Status</label>
-            <button onclick={() => isEnabled = !isEnabled} class={`w-full h-11 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-[inset_0_2px_5px_rgba(0,0,0,0.5)] ${isEnabled ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/[0.05]'}`}>
+            <label id="status-label" class="text-[10px] font-bold text-white/60 uppercase tracking-widest pl-1">Status</label>
+            <button 
+              onclick={() => isEnabled = !isEnabled} 
+              aria-labelledby="status-label"
+              class={`w-full h-11 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-[inset_0_2px_5px_rgba(0,0,0,0.5)] ${isEnabled ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/[0.05]'}`}>
               {isEnabled ? "Active" : "Paused"}
             </button>
           </div>

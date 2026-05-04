@@ -12,7 +12,7 @@
   let { agentId, onViewAll, onAddHook }: Props = $props();
 
   let expanded = $state(false);
-  let hooksManager = useHooksList({ agentId, scope: "agent" });
+  let hooksManager = useHooksList(() => ({ agentId, scope: "agent" }));
 
   let groupedByEvent = $derived.by(() => {
     const groups: Record<string, number> = {};

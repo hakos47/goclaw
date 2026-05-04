@@ -21,7 +21,7 @@
 
   const SCOPES = ["global", "tenant", "agent"];
 
-  const hooksList = useHooksList();
+  const hooksList = useHooksList(() => ({}));
 
   let hasLoaded = false;
   $effect(() => {
@@ -68,7 +68,7 @@
     if (editTarget) {
       await hooksList.updateHook(editTarget.id, data);
     } else {
-      await createHook(data);
+      await hooksList.createHook(data);
     }
     showCreate = false;
     editTarget = null;

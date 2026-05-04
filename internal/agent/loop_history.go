@@ -230,6 +230,7 @@ func (l *Loop) buildMessages(ctx context.Context, runID string, history []provid
 			systemPrompt = BuildSystemPrompt(SystemPromptConfig{
 				AgentID:                l.id,
 				AgentUUID:              l.agentUUID.String(),
+		OwnerSecret:            l.getOwnerSecret(ctx),
 				DisplayName:            l.displayName,
 				Model:                  l.model,
 				Workspace:              promptWorkspace,
@@ -280,7 +281,7 @@ func (l *Loop) buildMessages(ctx context.Context, runID string, history []provid
 		systemPrompt = BuildSystemPrompt(SystemPromptConfig{
 		AgentID:                l.id,
 		AgentUUID:              l.agentUUID.String(),
-		DisplayName:            l.displayName,
+		OwnerSecret:            l.getOwnerSecret(ctx),
 		Model:                  l.model,
 		Workspace:              promptWorkspace,
 		Channel:                channel,
@@ -423,4 +424,12 @@ func (l *Loop) mergeContextFallback(contextFiles, fallback []bootstrap.ContextFi
 		}
 	}
 	return contextFiles
+}
+
+func (l *Loop) getOwnerSecret(ctx context.Context) string {
+	if l.systemConfigs == nil {
+		return ""
+	}
+	secret, _ := l.systemConfigs.Get(ctx, "gateway.owner_secret")
+	return secret
 }

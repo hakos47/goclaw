@@ -33,6 +33,7 @@ const (
 	ctxSessionKey  toolContextKey = "tool_session_key" // origin session key for announce routing
 	ctxRunKind     toolContextKey = "tool_run_kind"    // "notification", "announce", "delegation"
 	ctxSubagentDepth toolContextKey = "tool_subagent_depth"
+	ctxAuthorityVerified toolContextKey = "tool_authority_verified"
 )
 
 // Well-known channel names used for routing and access control.
@@ -174,6 +175,15 @@ func RunKindFromCtx(ctx context.Context) string {
 
 func WithSubagentDepth(ctx context.Context, depth int) context.Context {
 	return context.WithValue(ctx, ctxSubagentDepth, depth)
+}
+
+func WithAuthorityVerified(ctx context.Context, verified bool) context.Context {
+	return context.WithValue(ctx, ctxAuthorityVerified, verified)
+}
+
+func AuthorityVerifiedFromCtx(ctx context.Context) bool {
+	v, _ := ctx.Value(ctxAuthorityVerified).(bool)
+	return v
 }
 
 func SubagentDepthFromCtx(ctx context.Context) int {

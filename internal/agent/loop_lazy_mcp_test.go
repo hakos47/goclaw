@@ -10,7 +10,7 @@ import (
 
 // mockExecTool is a simple tool that records whether it was executed.
 type mockExecTool struct {
-	name    string
+	name     string
 	executed bool
 }
 
@@ -217,7 +217,7 @@ func TestLoop_LazyMCP_PolicySeesToolAfterActivation(t *testing.T) {
 	pe := tools.NewPolicyEngine(&config.ToolsConfig{}) // full profile, no restrictions
 
 	// Before activation: tool not in FilterTools result.
-	defs := pe.FilterTools(reg, "agent1", "gemini-native", nil, nil, false, false)
+	defs := pe.FilterTools(reg, "run1", "agent1", "gemini-native", nil, nil, false, false)
 	for _, d := range defs {
 		if d.Function.Name == "mcp_svc__get_data" {
 			t.Fatal("tool should not appear in FilterTools before activation")
@@ -228,7 +228,7 @@ func TestLoop_LazyMCP_PolicySeesToolAfterActivation(t *testing.T) {
 	reg.TryActivateDeferred("mcp_svc__get_data")
 
 	// On next iteration FilterTools is called again — tool must now be included.
-	defs = pe.FilterTools(reg, "agent1", "gemini-native", nil, nil, false, false)
+	defs = pe.FilterTools(reg, "run1", "agent1", "gemini-native", nil, nil, false, false)
 	found := false
 	for _, d := range defs {
 		if d.Function.Name == "mcp_svc__get_data" {
@@ -270,7 +270,7 @@ func TestLoop_LazyMCP_PolicyDenyList_StillBlocked(t *testing.T) {
 	}
 
 	// FilterTools must still exclude the denied tool on the next iteration.
-	defs := pe.FilterTools(reg, "agent1", "gemini-native", nil, nil, false, false)
+	defs := pe.FilterTools(reg, "run1", "agent1", "gemini-native", nil, nil, false, false)
 	for _, d := range defs {
 		if d.Function.Name == "mcp_svc__exec_cmd" {
 			t.Error("denied tool should not appear in FilterTools even after activation")

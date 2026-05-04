@@ -11,7 +11,7 @@
 
   let { agentId }: Props = $props();
   
-  let hooksManager = useHooksList({ agentId, scope: "agent" });
+  let hooksManager = useHooksList(() => ({ agentId, scope: "agent" }));
 
   let totalCount = $derived(hooksManager.hooks.length);
   let isCreating = $state(false);

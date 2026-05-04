@@ -115,6 +115,17 @@ func (t *WriteFileTool) Execute(ctx context.Context, args map[string]any) *Resul
 		return ErrorResult("path is required")
 	}
 
+	// Check authority level (NIX-0 Mandate) - RELAXED (TASK-039)
+	workspace := ToolWorkspaceFromCtx(ctx)
+	if workspace == "" {
+		workspace = t.workspace
+	}
+	if !IsMemoryPath(path, workspace) && IsDelicatePath(path) {
+		if !AuthorityVerifiedFromCtx(ctx) {
+			return ErrorResult("403 Forbidden: writing to delicate paths requires verified authority. Run verify_authority tool first.")
+		}
+	}
+
 	// Group write permission check
 	if t.permStore != nil {
 		if err := store.CheckFileWriterPermission(ctx, t.permStore); err != nil {
@@ -165,10 +176,7 @@ func (t *WriteFileTool) Execute(ctx context.Context, args map[string]any) *Resul
 	}
 
 	// Host execution — use per-user workspace from context if available
-	workspace := ToolWorkspaceFromCtx(ctx)
-	if workspace == "" {
-		workspace = t.workspace
-	}
+	// workspace already resolved above for authority check (TASK-039)
 	allowed := allowedWithTeamWorkspace(ctx, t.allowedPrefixes)
 	resolved, err := resolvePathWithAllowed(path, workspace, effectiveRestrict(ctx, t.restrict), allowed)
 	if err != nil {

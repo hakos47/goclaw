@@ -464,6 +464,7 @@ func runGateway() {
 		tools.NewWhatsAppGetStatusTool(),
 		tools.NewWhatsAppReadMessagesTool(),
 		tools.NewWhatsAppVerifyOwnerTool(pgStores.ChannelInstances),
+		tools.NewVerifyAuthorityTool(pgStores.SystemConfigs, pgStores.Sessions),
 	}
 	for _, t := range waTools {
 		toolsReg.RegisterWithMetadata(t, tools.ToolMetadata{

@@ -6,6 +6,8 @@ interface SessionState {
     streamText: string | null;
     thinkingText: string | null;
     isRunning: boolean;
+    channelType?: string;
+    category?: string;
 }
 
 export const chatState = $state({
@@ -32,7 +34,9 @@ function ensureSession(key: string): SessionState {
             messages: [],
             streamText: null,
             thinkingText: null,
-            isRunning: false
+            isRunning: false,
+            channelType: "",
+            category: ""
         };
     }
     return chatState.sessions[key];
@@ -77,9 +81,16 @@ export async function loadChatHistory(sessionKey: string, agentId: string) {
     chatState.loading = true;
     try {
         const ws = useWs();
-        const res = await ws.call<{ messages: any[] }>("chat.history", { agentId, sessionKey });
+        const res = await ws.call<{ messages: any[], session?: any }>("chat.history", { agentId, sessionKey });
         
         const rawMessages = res.messages || [];
+
+        // Update session info if returned
+        if (res.session) {
+            const s = chatState.sessions[sessionKey];
+            s.channelType = res.session.channelType || "";
+            s.category = res.session.category || "";
+        }
         
         // Build tool result map
         const toolResultMap = new Map<string, any>();
@@ -89,21 +100,23 @@ export async function loadChatHistory(sessionKey: string, agentId: string) {
             }
         }
 
-        // Filter and map
-        const filtered = rawMessages.filter((m: any) => 
-            (m.role === 'user' || m.role === 'assistant') &&
-            !(m.role === 'user' && m.content?.startsWith('[System]'))
-        );
+        // Map and detect system messages
+        chatState.sessions[sessionKey].messages = rawMessages
+            .filter((m: any) => (m.role === 'user' || m.role === 'assistant'))
+            .map((m: any) => {
+                const { content: cleanContent, thinking: extractedThinking } = extractThinkingTags(m.content);
+                
+                let role = m.role;
+                if (role === 'user' && m.content?.startsWith('[System]')) {
+                    role = 'system';
+                }
 
-        chatState.sessions[sessionKey].messages = filtered.map((m: any) => {
-            const { content: cleanContent, thinking: extractedThinking } = extractThinkingTags(m.content);
-            
-            const chatMsg: any = {
-                role: m.role,
-                content: cleanContent,
-                thinking: m.thinking || extractedThinking,
-                timestamp: m.timestamp || Date.now()
-            };
+                const chatMsg: any = {
+                    role: role,
+                    content: cleanContent,
+                    thinking: m.thinking || extractedThinking,
+                    timestamp: m.timestamp || Date.now()
+                };
             
             if (m.tool_calls && m.tool_calls.length > 0) {
                 chatMsg.toolDetails = m.tool_calls.map((tc: any) => {

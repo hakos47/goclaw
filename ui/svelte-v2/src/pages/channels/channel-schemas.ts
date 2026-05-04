@@ -18,7 +18,7 @@ export interface FieldDef {
   advanced?: boolean;
   /** Optional button action next to the input */
   action?: {
-    type: "whatsapp_resolve_jid" | "whatsapp_verify_code";
+    type: "whatsapp_resolve_jid" | "whatsapp_verify_code" | "whatsapp_get_owner_secret" | "whatsapp_rotate_owner_secret";
     label: string;
   };
 }
@@ -195,6 +195,14 @@ export const configSchema: Record<string, FieldDef[]> = {
       placeholder: "8-character code",
       help: "Enter the code received on your WhatsApp number to verify ownership.",
       action: { type: "whatsapp_verify_code", label: "Validate" }
+    },
+    {
+      key: "authority_code",
+      label: "Authority Code",
+      type: "password",
+      placeholder: "e.g. 123456",
+      help: "Enter a new 6-digit code or click 'Rotate' to generate a random one. Click 'Reveal' (when empty) to see current.",
+      action: { type: "whatsapp_rotate_owner_secret", label: "Rotate" }
     },
     { key: "owner_user_id", label: "Owner User ID", type: "text", defaultValue: "system", help: "GoClaw UserID to map the owner to (default: system). Gives full access to system logs and tasks." },
     { key: "dm_policy", label: "DM Policy", type: "select", options: dmPolicyOptions, defaultValue: "pairing" },

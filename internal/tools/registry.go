@@ -162,6 +162,7 @@ func (r *Registry) ExecuteWithContext(ctx context.Context, name string, args map
 		ctx = WithToolPeerKind(ctx, peerKind)
 	}
 	if sessionKey != "" {
+		ctx = WithToolSessionKey(ctx, sessionKey)
 		ctx = WithToolSandboxKey(ctx, sessionKey)
 	}
 	if asyncCB != nil {

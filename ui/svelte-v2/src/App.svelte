@@ -40,6 +40,7 @@
   import Events from "./pages/events/Events.svelte";
   import ActivityPage from "./pages/activity/Activity.svelte";
   import Logs from "./pages/logs/Logs.svelte";
+  import Styleguide from "./pages/Styleguide.svelte";
   import Toaster from "$lib/components/ui/toast/Toaster.svelte";
   import DisconnectedOverlay from "./lib/components/shared/DisconnectedOverlay.svelte";
   
@@ -209,6 +210,8 @@
                 <ActivityPage />
               {:else if wsState.currentPath.startsWith('/logs')}
                 <Logs />
+              {:else if wsState.currentPath === '/styleguide'}
+                <Styleguide />
               {:else}
                 <Overview />
               {/if}

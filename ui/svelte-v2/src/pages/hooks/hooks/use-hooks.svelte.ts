@@ -10,7 +10,7 @@ export const hooksState = $state({
   initialized: false
 });
 
-export function useHooksList(filters?: { event?: string; scope?: string; agentId?: string; enabled?: boolean }) {
+export function useHooksList(getFilters: () => { event?: string; scope?: string; agentId?: string; enabled?: boolean } = () => ({})) {
   const ws = useWs();
 
   async function loadHooks(force = false) {
@@ -20,7 +20,7 @@ export function useHooksList(filters?: { event?: string; scope?: string; agentId
     hooksState.loading = true;
     hooksState.error = null;
     try {
-      const res = await ws.call<{ hooks: HookConfig[] }>("hooks.list", filters ?? {});
+      const res = await ws.call<{ hooks: HookConfig[] }>("hooks.list", getFilters());
       hooksState.hooks = res?.hooks ?? [];
       hooksState.initialized = true;
     } catch (e: any) {
@@ -30,6 +30,11 @@ export function useHooksList(filters?: { event?: string; scope?: string; agentId
       hooksState.loading = false;
     }
   }
+
+  $effect(() => {
+    getFilters(); // Track dependencies
+    loadHooks();
+  });
 
   async function createHook(params: Partial<HookConfig>) {
     try {

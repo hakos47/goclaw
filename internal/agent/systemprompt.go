@@ -114,7 +114,8 @@ type SystemPromptConfig struct {
 	TeamGuidance  string                  // edition-specific guidance from TeamActionPolicy.MemberGuidance()
 	ContextFiles  []bootstrap.ContextFile // bootstrap files for # Project Context
 	CurrentUserID string                  // ID of the user sending the current message
-	CurrentUserName string                // Push name or display name of the current sender
+	CurrentUserName string
+	OwnerSecret     string                // Push name or display name of the current sender
 	ExtraPrompt   string                  // extra system prompt (subagent context, etc.)
 	AgentType     string                  // "open" or "predefined" — affects context file framing
 
@@ -449,7 +450,12 @@ func BuildSystemPrompt(cfg SystemPromptConfig) string {
 
 	// 7. ## User Identity — full mode only
 	if isFull && !cfg.IsBootstrap && len(cfg.OwnerIDs) > 0 {
-		lines = append(lines, buildUserIdentitySection(cfg.OwnerIDs, cfg.CurrentUserID, cfg.CurrentUserName)...)
+		lines = append(lines, buildUserIdentitySection(cfg.OwnerIDs, cfg.CurrentUserID, cfg.CurrentUserName, cfg.OwnerSecret)...)
+	}
+
+	// 12. ## Memory Hierarchy — Mandatory for all modes (NIX-0 Standard)
+	if cfg.HasMemory {
+		lines = append(lines, buildMemoryHierarchySection()...)
 	}
 
 	// 12.5. ## Memory Recall — full=detailed, task=slim, minimal=essential

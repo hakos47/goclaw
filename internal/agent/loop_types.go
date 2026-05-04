@@ -116,7 +116,8 @@ type Loop struct {
 	tools           tools.ToolExecutor
 	registry        *tools.Registry        // direct registry access for MergeToolGroup (per-Registry tool groups)
 	toolPolicy      *tools.PolicyEngine    // optional: filters tools sent to LLM
-	agentToolPolicy *config.ToolPolicySpec // per-agent tool policy from DB (nil = no restrictions)
+	agentToolPolicy *config.ToolPolicySpec
+	systemConfigs   store.SystemConfigStore // per-agent tool policy from DB (nil = no restrictions)
 	activeRuns      atomic.Int32           // number of currently executing runs
 
 	// Per-session summarization lock: prevents concurrent summarize goroutines for the same session.
@@ -331,7 +332,8 @@ type LoopConfig struct {
 	Sessions        store.SessionStore
 	Tools           *tools.Registry
 	ToolPolicy      *tools.PolicyEngine    // optional: filters tools sent to LLM
-	AgentToolPolicy *config.ToolPolicySpec // per-agent tool policy from DB (nil = no restrictions)
+	AgentToolPolicy *config.ToolPolicySpec
+	SystemConfigs   store.SystemConfigStore // per-agent tool policy from DB (nil = no restrictions)
 	OnEvent         func(AgentEvent)
 
 	// Bootstrap/persona context

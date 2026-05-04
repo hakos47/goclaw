@@ -1,6 +1,6 @@
 <script lang="ts">
   import { chatState } from "../../state/chat.svelte";
-  import { Brain, Terminal, User, Bot, Loader2 } from "lucide-svelte";
+  import { Brain, Terminal, User, Bot, Loader2, Phone, Globe, MessageSquare } from "lucide-svelte";
   import { cn } from "../../utils";
   import { marked } from "marked";
   import DOMPurify from "dompurify";
@@ -43,6 +43,37 @@
     return DOMPurify.sanitize(processedHtml);
   }
 
+  function isSystem(msg: any) {
+    return msg.role === 'system' || (msg.role === 'user' && msg.content?.startsWith('[System]'));
+  }
+
+  function getMessageIdentity(msg: any, session: any) {
+    const isSys = isSystem(msg);
+    if (isSys) return { label: 'SYSTEM UPLINK', icon: Terminal, type: 'system' };
+    
+    if (msg.role === 'assistant') {
+        return { label: 'AGENT UPLINK', icon: Bot, type: 'assistant' };
+    }
+    
+    // User role
+    let channel = session?.channelType || '';
+    const key = session?.key || '';
+
+    // Infer from key if type is missing
+    if (!channel) {
+        if (key.includes(':whatsapp:') || key.includes(':hakos-p1:')) channel = 'whatsapp';
+        else if (key.includes(':telegram:')) channel = 'telegram';
+        else if (key.includes(':discord:')) channel = 'discord';
+        else channel = 'web';
+    }
+
+    if (channel === 'whatsapp') return { label: 'WHATSAPP UPLINK', icon: Phone, type: 'user' };
+    if (channel === 'telegram') return { label: 'TELEGRAM UPLINK', icon: Phone, type: 'user' };
+    if (channel === 'discord') return { label: 'DISCORD UPLINK', icon: MessageSquare, type: 'user' };
+    
+    return { label: 'OPERATOR', icon: User, type: 'user' };
+  }
+
   // Auto-scroll logic
   $effect(() => {
     if (chatState.activeSession?.messages.length || chatState.activeSession?.streamText) {
@@ -60,34 +91,46 @@
 <div bind:this={scrollContainer} class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-gradient-to-b from-transparent to-[#050505]/40 opacity-95">
   {#if chatState.activeSession}
     {#each chatState.activeSession.messages as msg}
-        {@const isOperator = msg.role === 'user'}
-        <div class={cn("flex flex-col gap-3", isOperator ? "items-end" : "items-start")}>
+        {@const identity = getMessageIdentity(msg, chatState.activeSession)}
+        {@const isOp = identity.type === 'user'}
+        {@const isSys = identity.type === 'system'}
+        
+        <div class={cn("flex flex-col gap-3", isOp ? "items-end" : (isSys ? "items-center" : "items-start"))}>
             <!-- Tactical Header -->
-            <div class={cn("flex items-center gap-3 px-2 w-full max-w-[95%] sm:max-w-[85%] mb-1", isOperator ? "flex-row-reverse" : "flex-row")}>
-                <div class={cn("p-1.5 rounded-lg border shadow-[0_0_15px_rgba(0,0,0,0.5)] shrink-0 relative isolate", isOperator ? "bg-[#d946ef]/10 border-[#d946ef]/40 text-[#d946ef]" : "bg-goclaw-neon-cyan/10 border-goclaw-neon-cyan/40 text-goclaw-neon-cyan")}>
-                    <div class={cn("absolute inset-0 opacity-20 blur-md rounded-lg", isOperator ? "bg-[#d946ef]" : "bg-goclaw-neon-cyan")}></div>
-                    {#if isOperator}
-                        <User class="h-3 w-3 relative z-10" />
-                    {:else}
-                        <Bot class="h-3 w-3 relative z-10" />
-                    {/if}
+            <div class={cn("flex items-center gap-3 px-2 w-full max-w-[95%] sm:max-w-[85%] mb-1", isOp ? "flex-row-reverse" : "flex-row")}>
+                <div class={cn(
+                    "p-1.5 rounded-lg border shadow-[0_0_15px_rgba(0,0,0,0.5)] shrink-0 relative isolate", 
+                    isOp ? "bg-[#d946ef]/10 border-[#d946ef]/40 text-[#d946ef]" : 
+                    (isSys ? "bg-red-500/10 border-red-500/40 text-red-500" : "bg-goclaw-neon-cyan/10 border-goclaw-neon-cyan/40 text-goclaw-neon-cyan")
+                )}>
+                    <div class={cn(
+                        "absolute inset-0 opacity-20 blur-md rounded-lg", 
+                        isOp ? "bg-[#d946ef]" : (isSys ? "bg-red-500" : "bg-goclaw-neon-cyan")
+                    )}></div>
+                    <identity.icon class="h-3 w-3 relative z-10" />
                 </div>
-                <div class={cn("flex flex-col min-w-0 flex-1", isOperator ? "items-end" : "items-start")}>
-                    <div class={cn("flex items-center gap-2", isOperator ? "flex-row-reverse" : "flex-row")}>
-                        <span class={cn("text-[9px] font-mono uppercase tracking-widest shrink-0", isOperator ? "text-[#d946ef]/50" : "text-goclaw-neon-cyan/50")}>
-                            {isOperator ? 'TX' : 'RX'}-{msg.timestamp?.toString(16).slice(-5).toUpperCase() || (isOperator ? 'USR01' : 'SYS01')}
+                <div class={cn("flex flex-col min-w-0 flex-1", isOp ? "items-end" : (isSys ? "items-center" : "items-start"))}>
+                    <div class={cn("flex items-center gap-2", isOp ? "flex-row-reverse" : "flex-row")}>
+                        <span class={cn(
+                            "text-[9px] font-mono uppercase tracking-widest shrink-0", 
+                            isOp ? "text-[#d946ef]/50" : (isSys ? "text-red-500/50" : "text-goclaw-neon-cyan/50")
+                        )}>
+                            {isOp ? 'TX' : (isSys ? 'SYS' : 'RX')}-{msg.timestamp?.toString(16).slice(-5).toUpperCase() || (isOp ? 'USR01' : 'SYS01')}
                         </span>
-                        <span class={cn("text-[10px] font-black uppercase tracking-widest truncate max-w-[150px] drop-shadow-[0_0_5px_currentColor]", isOperator ? "text-[#d946ef]" : "text-goclaw-neon-cyan")}>
-                            {isOperator ? 'OPERATOR' : 'SYSTEM UPLINK'}
+                        <span class={cn(
+                            "text-[10px] font-black uppercase tracking-widest truncate max-w-[150px] drop-shadow-[0_0_5px_currentColor]", 
+                            isOp ? "text-[#d946ef]" : (isSys ? "text-red-500" : "text-goclaw-neon-cyan")
+                        )}>
+                            {identity.label}
                         </span>
                     </div>
-                    <span class="text-[8px] font-mono text-white/30 tracking-[0.2em] uppercase shrink-0">Auth: Secure</span>
+                    <span class="text-[8px] font-mono text-white/30 tracking-[0.2em] uppercase shrink-0">Auth: {isSys ? 'Root' : 'Secure'}</span>
                 </div>
             </div>
 
             <div class={cn(
                 "max-w-[85%] min-w-[50%] flex flex-col gap-2 relative isolate",
-                msg.role === 'user' ? "items-end" : "items-start"
+                isOp ? "items-end" : (isSys ? "items-center" : "items-start")
             )}>
                 <!-- Tool Calls Group -->
                 {#if msg.toolDetails && msg.toolDetails.length > 0}
@@ -109,16 +152,26 @@
                 {#if msg.content || (msg.mediaItems && msg.mediaItems.length > 0)}
                     <div class={cn(
                         "w-full px-5 py-4 rounded-3xl text-sm leading-relaxed transition-all duration-300 relative isolate overflow-hidden group/msg",
-                        msg.role === 'user' 
+                        isOp 
                             ? "bg-[#d946ef]/10 border border-[#d946ef]/30 text-white rounded-tr-sm shadow-[0_0_30px_rgba(217,70,239,0.2)] backdrop-blur-3xl" 
-                            : "bg-black/40 border border-[#d946ef]/20 text-white/90 rounded-tl-sm backdrop-blur-3xl shadow-[0_0_30px_rgba(217,70,239,0.1),inset_0_1px_1px_rgba(255,255,255,0.05)]"
+                            : (isSys 
+                                ? "bg-red-950/20 border border-red-500/30 text-red-200 text-center rounded-sm backdrop-blur-3xl shadow-[0_0_20px_rgba(239,68,68,0.1)]"
+                                : "bg-black/40 border border-[#d946ef]/20 text-white/90 rounded-tl-sm backdrop-blur-3xl shadow-[0_0_30px_rgba(217,70,239,0.1),inset_0_1px_1px_rgba(255,255,255,0.05)]")
                     )}>
                         <!-- Cybernetic Corners -->
-                        <div class={cn("absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 opacity-80 transition-colors", msg.role === 'user' ? "border-[#d946ef] drop-shadow-[0_0_5px_rgba(217,70,239,0.8)]" : "border-goclaw-neon-cyan drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]")}></div>
-                        <div class={cn("absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 opacity-80 transition-colors", msg.role === 'user' ? "border-[#d946ef] drop-shadow-[0_0_5px_rgba(217,70,239,0.8)]" : "border-goclaw-neon-cyan drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]")}></div>
+                        <div class={cn(
+                            "absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 opacity-80 transition-colors", 
+                            isOp ? "border-[#d946ef] drop-shadow-[0_0_5px_rgba(217,70,239,0.8)]" : 
+                            (isSys ? "border-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]" : "border-goclaw-neon-cyan drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]")
+                        )}></div>
+                        <div class={cn(
+                            "absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 opacity-80 transition-colors", 
+                            isOp ? "border-[#d946ef] drop-shadow-[0_0_5px_rgba(217,70,239,0.8)]" : 
+                            (isSys ? "border-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]" : "border-goclaw-neon-cyan drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]")
+                        )}></div>
 
                         <!-- Scanlines & Grid -->
-                        {#if msg.role !== 'user'}
+                        {#if !isOp}
                             <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-20"></div>
                         {/if}
                         <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100%_4px] opacity-20 pointer-events-none"></div>

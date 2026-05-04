@@ -143,6 +143,13 @@ func (t *ExecTool) Execute(ctx context.Context, args map[string]any) *Result {
 		return ErrorResult("command is required")
 	}
 
+	// Check authority level (NIX-0 Mandate) - RELAXED (TASK-039)
+	if IsDelicateCommand(command) {
+		if !AuthorityVerifiedFromCtx(ctx) {
+			return ErrorResult("403 Forbidden: executing delicate commands requires verified authority. Run verify_authority tool first.")
+		}
+	}
+
 	// Reject NUL bytes — they cause silent shell truncation enabling injection.
 	if strings.ContainsRune(command, '\x00') {
 		return ErrorResult("command contains invalid NUL byte")

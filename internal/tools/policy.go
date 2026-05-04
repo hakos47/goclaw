@@ -20,7 +20,7 @@ var builtinToolGroups = map[string][]string{
 	"sessions":   {"sessions_list", "sessions_history", "sessions_send", "spawn", "session_status"},
 	"ui":         {"browser"},
 	"automation": {"cron"},
-	"messaging":  {"message", "create_forum_topic", "list_group_members", "whatsapp_send_message", "whatsapp_list_chats", "whatsapp_list_contacts", "whatsapp_find_contact", "whatsapp_group_create", "whatsapp_group_invite", "whatsapp_group_members", "whatsapp_profile_photo", "whatsapp_get_profile", "whatsapp_get_status", "whatsapp_read_messages", "whatsapp_test_target"},
+	"messaging":  {"message", "create_forum_topic", "list_group_members", "whatsapp_send_message", "whatsapp_list_chats", "whatsapp_list_contacts", "whatsapp_find_contact", "whatsapp_group_create", "whatsapp_group_invite", "whatsapp_group_members", "whatsapp_profile_photo", "whatsapp_get_profile", "whatsapp_get_status", "whatsapp_read_messages", "whatsapp_test_target", "whatsapp_verify_owner", "verify_authority"},
 	"team":       {"team_tasks"},
 	// Composite group: all goclaw native tools (excludes MCP/custom plugins).
 	"goclaw": {
@@ -34,7 +34,7 @@ var builtinToolGroups = map[string][]string{
 		"message", "create_forum_topic", "list_group_members",
 		"whatsapp_send_message", "whatsapp_list_chats", "whatsapp_list_contacts", "whatsapp_find_contact",
 		"whatsapp_group_create", "whatsapp_group_invite", "whatsapp_group_members", "whatsapp_profile_photo", "whatsapp_get_profile",
-		"whatsapp_get_status", "whatsapp_read_messages", "whatsapp_test_target",
+		"whatsapp_get_status", "whatsapp_read_messages", "whatsapp_test_target", "whatsapp_verify_owner", "verify_authority",
 		"read_image", "read_document", "read_audio", "read_video",
 		"create_image", "create_video", "create_audio",
 		"skill_search", "skill_manage", "publish_skill", "use_skill",
@@ -89,9 +89,9 @@ var leafSubagentDenyList = []string{
 // PolicyEngine evaluates tool access based on layered config policies.
 type PolicyEngine struct {
 	globalPolicy     *config.ToolsConfig
-	mu               sync.RWMutex     // protects denyCapabilities + registry + rbacCache
-	denyCapabilities []ToolCapability // capability-based deny rules (v3)
-	registry         *Registry        // for metadata lookups (nil = skip capability checks)
+	mu               sync.RWMutex                          // protects denyCapabilities + registry + rbacCache
+	denyCapabilities []ToolCapability                      // capability-based deny rules (v3)
+	registry         *Registry                             // for metadata lookups (nil = skip capability checks)
 	rbacCache        map[string][]providers.ToolDefinition // key: runID -> cached defs
 }
 
@@ -101,6 +101,15 @@ func NewPolicyEngine(cfg *config.ToolsConfig) *PolicyEngine {
 		globalPolicy: cfg,
 		rbacCache:    make(map[string][]providers.ToolDefinition),
 	}
+}
+
+// SetRegistry sets the fallback registry used for group expansion and metadata
+// checks when a call site only has the policy engine. FilterTools prefers the
+// registry passed to it, because agent loops may use per-agent cloned registries.
+func (pe *PolicyEngine) SetRegistry(reg *Registry) {
+	pe.mu.Lock()
+	defer pe.mu.Unlock()
+	pe.registry = reg
 }
 
 // CleanupRun removes cached results for a completed run to free memory.
@@ -125,10 +134,13 @@ func (pe *PolicyEngine) FilterTools(
 	isSubagent bool,
 	isLeafAgent bool,
 ) []providers.ToolDefinition {
+	reg := pe.registryForExecutor(registry)
+	cacheKey := policyCacheKey(runID, registry, providerName, agentToolPolicy, groupToolAllow, isSubagent, isLeafAgent)
+
 	// Check cache first if runID is provided
-	if runID != "" {
+	if cacheKey != "" {
 		pe.mu.RLock()
-		if cached, ok := pe.rbacCache[runID]; ok {
+		if cached, ok := pe.rbacCache[cacheKey]; ok {
 			pe.mu.RUnlock()
 			return cached
 		}
@@ -136,21 +148,20 @@ func (pe *PolicyEngine) FilterTools(
 	}
 
 	allTools := registry.List()
-	allowed := pe.evaluate(allTools, providerName, agentToolPolicy, groupToolAllow)
+	allowed := pe.evaluateWithRegistry(reg, allTools, providerName, agentToolPolicy, groupToolAllow)
 
 	// Step 8: Capability-based deny (v3 RBAC)
 	pe.mu.RLock()
 	denyCaps := make([]ToolCapability, len(pe.denyCapabilities))
 	copy(denyCaps, pe.denyCapabilities)
-	capReg := pe.registry
 	pe.mu.RUnlock()
 
 	if isSubagent {
 		denyCaps = append(denyCaps, subagentDenyCapabilities...)
 	}
 
-	if len(denyCaps) > 0 && capReg != nil {
-		allowed = filterByCapability(allowed, denyCaps, capReg)
+	if len(denyCaps) > 0 && reg != nil {
+		allowed = filterByCapability(allowed, denyCaps, reg)
 	}
 
 	// Apply legacy subagent name-based restrictions
@@ -206,14 +217,15 @@ func (pe *PolicyEngine) FilterTools(
 	)
 
 	// Store in cache
-	if runID != "" {
+	if cacheKey != "" {
 		pe.mu.Lock()
-		pe.rbacCache[runID] = defs
+		pe.rbacCache[cacheKey] = defs
 		pe.mu.Unlock()
 	}
 
 	return defs
 }
+
 // evaluate runs the 7-step policy pipeline.
 func (pe *PolicyEngine) evaluate(
 	allTools []string,
@@ -221,20 +233,27 @@ func (pe *PolicyEngine) evaluate(
 	agentToolPolicy *config.ToolPolicySpec,
 	groupToolAllow []string,
 ) []string {
+	return pe.evaluateWithRegistry(pe.registryForExecutor(nil), allTools, providerName, agentToolPolicy, groupToolAllow)
+}
+
+func (pe *PolicyEngine) evaluateWithRegistry(
+	reg *Registry,
+	allTools []string,
+	providerName string,
+	agentToolPolicy *config.ToolPolicySpec,
+	groupToolAllow []string,
+) []string {
 	g := pe.globalPolicy
-
-	// Get registry for group expansion (may be nil in early boot)
-	pe.mu.RLock()
-	reg := pe.registry
-	pe.mu.RUnlock()
-
+	if g == nil {
+		g = &config.ToolsConfig{}
+	}
 	// Step 1: Global profile
-	allowed := pe.applyProfile(allTools, g.Profile)
+	allowed := pe.applyProfileWithRegistry(reg, allTools, g.Profile)
 
 	// Step 2: Provider-level profile override
 	if g.ByProvider != nil {
 		if pp, ok := g.ByProvider[providerName]; ok && pp.Profile != "" {
-			allowed = pe.applyProfile(allTools, pp.Profile)
+			allowed = pe.applyProfileWithRegistry(reg, allTools, pp.Profile)
 		}
 	}
 
@@ -291,6 +310,10 @@ func (pe *PolicyEngine) evaluate(
 // applyProfile returns tools allowed by a named profile.
 // "full" or empty profile = all tools allowed.
 func (pe *PolicyEngine) applyProfile(allTools []string, profile string) []string {
+	return pe.applyProfileWithRegistry(pe.registryForExecutor(nil), allTools, profile)
+}
+
+func (pe *PolicyEngine) applyProfileWithRegistry(reg *Registry, allTools []string, profile string) []string {
 	if profile == "" || profile == "full" {
 		return copySlice(allTools)
 	}
@@ -300,11 +323,6 @@ func (pe *PolicyEngine) applyProfile(allTools []string, profile string) []string
 		slog.Warn("unknown tool profile, using full", "profile", profile)
 		return copySlice(allTools)
 	}
-
-	// Get registry for group expansion
-	pe.mu.RLock()
-	reg := pe.registry
-	pe.mu.RUnlock()
 
 	return expandSpec(reg, allTools, spec)
 }
@@ -548,4 +566,57 @@ func filterByCapability(names []string, denyCaps []ToolCapability, reg *Registry
 		}
 	}
 	return out
+}
+
+func (pe *PolicyEngine) registryForExecutor(executor ToolExecutor) *Registry {
+	if reg, ok := executor.(*Registry); ok {
+		return reg
+	}
+	pe.mu.RLock()
+	defer pe.mu.RUnlock()
+	return pe.registry
+}
+
+func policyCacheKey(runID string, registry ToolExecutor, providerName string, agentToolPolicy *config.ToolPolicySpec, groupToolAllow []string, isSubagent, isLeafAgent bool) string {
+	if runID == "" {
+		return ""
+	}
+	tools := registry.List()
+	return runID + "|" + providerName + "|" + boolCachePart(isSubagent) + "|" + boolCachePart(isLeafAgent) + "|" +
+		policySpecCachePart(agentToolPolicy) + "|" + strings.Join(groupToolAllow, ",") + "|" + strings.Join(tools, ",")
+}
+
+func boolCachePart(v bool) string {
+	if v {
+		return "1"
+	}
+	return "0"
+}
+
+func policySpecCachePart(spec *config.ToolPolicySpec) string {
+	if spec == nil {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(spec.Profile)
+	b.WriteString("|a:")
+	b.WriteString(strings.Join(spec.Allow, ","))
+	b.WriteString("|d:")
+	b.WriteString(strings.Join(spec.Deny, ","))
+	b.WriteString("|aa:")
+	b.WriteString(strings.Join(spec.AlsoAllow, ","))
+	if len(spec.ByProvider) > 0 {
+		keys := make([]string, 0, len(spec.ByProvider))
+		for k := range spec.ByProvider {
+			keys = append(keys, k)
+		}
+		slices.Sort(keys)
+		for _, k := range keys {
+			b.WriteString("|p:")
+			b.WriteString(k)
+			b.WriteString("=")
+			b.WriteString(policySpecCachePart(spec.ByProvider[k]))
+		}
+	}
+	return b.String()
 }

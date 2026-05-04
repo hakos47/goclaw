@@ -138,6 +138,7 @@ func (m *SessionsMethods) handlePreview(ctx context.Context, client *gateway.Cli
 
 	history := m.sessions.GetHistory(ctx, params.Key)
 	summary := m.sessions.GetSummary(ctx, params.Key)
+	sess := m.sessions.Get(ctx, params.Key)
 
 	// Sign file URLs before delivery — sessions store clean paths.
 	secret := httpapi.FileSigningKey()
@@ -153,6 +154,7 @@ func (m *SessionsMethods) handlePreview(ctx context.Context, client *gateway.Cli
 		"key":      params.Key,
 		"messages": history,
 		"summary":  summary,
+		"session":  sess,
 	}))
 }
 
